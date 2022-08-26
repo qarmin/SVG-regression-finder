@@ -37,7 +37,7 @@ fn main() {
     }
 
     let lines: Vec<_> = match fs::read_to_string(&path_to_files_to_check) {
-        Ok(t) => t.split("\n").map(str::to_string).collect(),
+        Ok(t) => t.split('\n').map(str::to_string).collect(),
         Err(e) => {
             println!(
                 "Failed to open file {}, reason {}",
@@ -70,7 +70,7 @@ fn main() {
             args.push("-r".to_string());
             args.push(format!("{}x{}", size_of_file, size_of_file));
 
-            let output = Command::new(&thorvg_path).args(args).output().unwrap();
+            let _output = Command::new(&thorvg_path).args(args).output().unwrap();
 
             let _ = fs::copy(&old_png_file, &thorvg_png_file);
             let _ = fs::remove_file(&old_png_file);
@@ -85,15 +85,16 @@ fn main() {
             } else {
                 return;
             }
-            let mut args = Vec::new();
-            args.push(source_file.to_string());
-            args.push("--export-type=png".to_string());
-            // args.push("-w".to_string());
-            // args.push(size_of_file.to_string());
-            args.push("-h".to_string());
-            args.push(size_of_file.to_string());
+            let args = vec![
+                source_file.to_string(),
+                "--export-type=png".to_string(),
+                // "-w".to_string(),
+                // size_of_file.to_string()),
+                "-h".to_string(),
+                size_of_file.to_string(),
+            ];
 
-            let output = Command::new("inkscape").args(args).output().unwrap();
+            let _output = Command::new("inkscape").args(args).output().unwrap();
 
             let _ = fs::copy(&old_png_file, &inkscape_png_file);
             let _ = fs::remove_file(&old_png_file);
@@ -103,28 +104,29 @@ fn main() {
         let thorvg_image = match image::open(&thorvg_png_file) {
             Ok(t) => t,
             Err(_) => {
-                println!("Failed to open {}", thorvg_png_file);
+                // println!("Failed to open {}", thorvg_png_file);
                 return;
             }
         };
         let inkscape_image = match image::open(&inkscape_png_file) {
             Ok(t) => t,
             Err(_) => {
-                println!("Failed to open {}", inkscape_png_file);
+                // println!("Failed to open {}", inkscape_png_file);
                 return;
             }
         };
 
-        if thorvg_image.width() != inkscape_image.width() || thorvg_image.height() != inkscape_image.height(){
-            println!("Ignored non square images thorvg {}x{}, inkscape {}x{}", thorvg_image.width(),thorvg_image.height(), inkscape_image.width(),inkscape_image.height());
+        if thorvg_image.width() != inkscape_image.width()
+            || thorvg_image.height() != inkscape_image.height()
+        {
+            // println!("Ignored non square images thorvg {}x{}, inkscape {}x{}", thorvg_image.width(),thorvg_image.height(), inkscape_image.width(),inkscape_image.height());
             return;
         }
 
         let hasher = HasherConfig::new()
-            .hash_alg(HashAlg::Blockhash) // Looks that this is quite good hash algorithm for images with alpha
+            .hash_alg(HashAlg::Blockhash) // Looks that this is quite good hash algorithm for images with alpha, other not works well
             .hash_size(16, 16)
             .to_hasher();
-
 
         let thorvg_hash = hasher.hash_image(&thorvg_image).as_bytes().to_vec();
         let inkscape_hash = hasher.hash_image(&inkscape_image).as_bytes().to_vec();
@@ -139,19 +141,19 @@ fn main() {
         };
 
         if !finds.is_empty() && similarity_found <= similarity {
-            println!(
-                "VALID conversion, inkscape and thorvg have same output for {}",
-                source_file
-            );
+            // println!(
+            //     "VALID conversion, inkscape and thorvg have same output for {}",
+            //     source_file
+            // );
         } else {
-            println!(
-                "INVALID conversion, thorvg and inkscape results are different, difference {}\n\tSVG {}\n\tInkscape {}\n\tThorvg {}",
-                similarity_found, source_file, inkscape_png_file, thorvg_png_file
-            );
+            // println!(
+            //     "INVALID conversion, thorvg and inkscape results are different, difference {}\n\tSVG {}\n\tInkscape {}\n\tThorvg {}",
+            //     similarity_found, source_file, inkscape_png_file, thorvg_png_file
+            // );
             print!(
-                "\txdg-open {};xdg-open {};xdg-open {}",
+                "\tfirefox {}; firefox {}; firefox {}",
                 source_file, inkscape_png_file, thorvg_png_file
-            );
+            ); // I found that the best to compare images, is to open them in firefox and switch tabs,
             println!();
         }
     });
