@@ -52,3 +52,10 @@ app "/home/rafal/test/thorvg/build/src/bin/svg2png/svg2png" "input.txt" 500 10
 - Now you can simply copy/paste this commands into commandline to open multiple files in firefox to be able quite easily compare them by changing tabs. I used firefox instead e.g. `xdg-open`, because eog and eom started to crash constantly when opening several images
 - Copy possibly broken files to new location I prepared small python script, available in `src/python_renamer.py` which will convert firefox commands from above to cp, to be able to easily copy this files to new folder
 - Check manually differences
+
+Example differences that found this tool(in Japanese flag look at shadows inside red circle)
+
+![Screenshot from 2022-08-26 16-25-58](https://user-images.githubusercontent.com/41945903/186930569-0c46657c-9054-42e0-9eb4-a539b6eccbe4.png)
+
+## Limitations
+For now it cannot check non square svg files, because ThorVG and Inkscape resize them in different way
