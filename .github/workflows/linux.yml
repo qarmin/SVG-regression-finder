@@ -36,7 +36,6 @@ jobs:
         env:
           CARGO_INCREMENTAL: 0
           RUSTFLAGS: "-C debuginfo=0"
-        if: ${{ (matrix.type == 'release') && (matrix.toolchain == '1.60.0') }}
 
       - name: Store Linux
         uses: actions/upload-artifact@v2
