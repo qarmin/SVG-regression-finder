@@ -55,7 +55,35 @@ fn main() {
         let source_file = line;
 
         let thorvg_png_file;
-        let inkscape_png_file;
+        // let inkscape_png_file;
+        let rsvg_png_file;
+        // Rsvg Converter
+        {
+            if let Some(source) = source_file.strip_suffix(".svg") {
+                rsvg_png_file = format!("{}_rsvg.png", source);
+            } else {
+                return;
+            }
+            let mut args = Vec::new();
+            args.push("-o".to_string());
+            args.push(rsvg_png_file.to_string());
+            args.push(source_file.to_string());
+            args.push("-w".to_string());
+            args.push(size_of_file.to_string());
+            // args.push("-h".to_string()); // Workaround, which allow to check if original image was rectangle
+            // args.push(size_of_file.to_string());
+
+            let _output = Command::new("rsvg-convert").args(args).output().unwrap();
+
+            // let err = String::from_utf8(output.stderr);
+            // if err.is_ok() && err != Ok("".to_string()) {
+            //     let message = err.unwrap();
+            //     if message.starts_with("Error reading ") {
+            //         return;
+            //     }
+            //     println!("RSVG {:?} {}", message, source_file);
+            // }
+        }
         // ThorVG Converter
         {
             let old_png_file;
@@ -74,32 +102,40 @@ fn main() {
 
             let _ = fs::copy(&old_png_file, &thorvg_png_file);
             let _ = fs::remove_file(&old_png_file);
-            // println!("ThorVG {:?}", String::from_utf8(output.stdout));
-        }
-        // Inkscape Converter
-        {
-            let old_png_file;
-            if let Some(source) = source_file.strip_suffix(".svg") {
-                old_png_file = format!("{}.png", source);
-                inkscape_png_file = format!("{}_inkscape.png", source);
-            } else {
-                return;
-            }
-            let args = vec![
-                source_file.to_string(),
-                "--export-type=png".to_string(),
-                // "-w".to_string(),
-                // size_of_file.to_string()),
-                "-h".to_string(),
-                size_of_file.to_string(),
-            ];
 
-            let _output = Command::new("inkscape").args(args).output().unwrap();
-
-            let _ = fs::copy(&old_png_file, &inkscape_png_file);
-            let _ = fs::remove_file(&old_png_file);
-            // println!("Inkscape {:?}", String::from_utf8(output.stdout));
+            // let err = String::from_utf8(output.stderr);
+            // if err.is_ok() && err != Ok("".to_string()) {
+            //     let message = err.unwrap();
+            //     if message.starts_with("Error reading ") {
+            //         return;
+            //     }
+            //     println!("ThorVG {:?} {}", message, source_file);
+            // }
         }
+        // // Inkscape Converter
+        // {
+        //     let old_png_file;
+        //     if let Some(source) = source_file.strip_suffix(".svg") {
+        //         old_png_file = format!("{}.png", source);
+        //         inkscape_png_file = format!("{}_inkscape.png", source);
+        //     } else {
+        //         return;
+        //     }
+        //     let args = vec![
+        //         source_file.to_string(),
+        //         "--export-type=png".to_string(),
+        //         // "-w".to_string(),
+        //         // size_of_file.to_string()),
+        //         "-h".to_string(),
+        //         size_of_file.to_string(),
+        //     ];
+        //
+        //     let _output = Command::new("inkscape").args(args).output().unwrap();
+        //
+        //     let _ = fs::copy(&old_png_file, &inkscape_png_file);
+        //     let _ = fs::remove_file(&old_png_file);
+        //     // println!("Inkscape {:?}", String::from_utf8(output.stdout));
+        // }
 
         let thorvg_image = match image::open(&thorvg_png_file) {
             Ok(t) => t,
@@ -108,18 +144,19 @@ fn main() {
                 return;
             }
         };
-        let inkscape_image = match image::open(&inkscape_png_file) {
+        let rsvg_image = match image::open(&rsvg_png_file) {
             Ok(t) => t,
             Err(_) => {
-                // println!("Failed to open {}", inkscape_png_file);
+                // println!("Failed to open {}", rsvg_png_file);
                 return;
             }
         };
 
-        if thorvg_image.width() != inkscape_image.width()
-            || thorvg_image.height() != inkscape_image.height()
+        // Both inkscape and rsvg works differently that ThorVG https://github.com/Samsung/thorvg/issues/1258
+        if thorvg_image.width() != rsvg_image.width()
+            || thorvg_image.height() != rsvg_image.height()
         {
-            // println!("Ignored non square images thorvg {}x{}, inkscape {}x{}", thorvg_image.width(),thorvg_image.height(), inkscape_image.width(),inkscape_image.height());
+            // println!("Ignored non square images thorvg {}x{}, rsvg {}x{}", thorvg_image.width(),thorvg_image.height(), rsvg_image.width(),rsvg_image.height());
             return;
         }
 
@@ -129,12 +166,12 @@ fn main() {
             .to_hasher();
 
         let thorvg_hash = hasher.hash_image(&thorvg_image).as_bytes().to_vec();
-        let inkscape_hash = hasher.hash_image(&inkscape_image).as_bytes().to_vec();
+        let rsvg_hash = hasher.hash_image(&rsvg_image).as_bytes().to_vec();
         let mut bktree = BKTree::new(Hamming);
 
         bktree.add(thorvg_hash);
 
-        let finds = bktree.find(&inkscape_hash, 9999).collect::<Vec<_>>();
+        let finds = bktree.find(&rsvg_hash, 9999).collect::<Vec<_>>();
         let similarity_found = match finds.get(0) {
             Some(t) => t.0,
             None => 999999,
@@ -142,17 +179,17 @@ fn main() {
 
         if !finds.is_empty() && similarity_found <= similarity {
             // println!(
-            //     "VALID conversion, inkscape and thorvg have same output for {}",
+            //     "VALID conversion, rsvg and thorvg have same output for {}",
             //     source_file
             // );
         } else {
             // println!(
-            //     "INVALID conversion, thorvg and inkscape results are different, difference {}\n\tSVG {}\n\tInkscape {}\n\tThorvg {}",
-            //     similarity_found, source_file, inkscape_png_file, thorvg_png_file
+            //     "INVALID conversion, thorvg and rsvg results are different, difference {}\n\tSVG {}\n\tRsvg {}\n\tThorvg {}",
+            //     similarity_found, source_file, rsvg_png_file, thorvg_png_file
             // );
             print!(
                 "\tfirefox {}; firefox {}; firefox {}",
-                source_file, inkscape_png_file, thorvg_png_file
+                source_file, rsvg_png_file, thorvg_png_file
             ); // I found that the best to compare images, is to open them in firefox and switch tabs,
             println!();
         }
