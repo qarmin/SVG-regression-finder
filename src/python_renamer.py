@@ -1,6 +1,6 @@
 # Script to change output to copy files to provided directory
 # Changes firefox a.svg; firefox b.png; firefox c.png to cp a.svg /a/b.svg; cp b.png /a/b.png etc.
-
+import os
 
 lines = """
 	firefox /home/rafal/Desktop/SVGTEST/ABCD_1506.svg; firefox /home/rafal/Desktop/SVGTEST/ABCD_1506_inkscape.png; firefox /home/rafal/Desktop/SVGTEST/ABCD_1506_thorvg.png
@@ -15,4 +15,4 @@ for i in lines.split('\n'):
 		for line in b.split(';'):
 			line = line.strip()
 			splits = line.split('/')
-			print("cp \"" + line + "\" \"" + output + splits[len(splits) - 1] + "\"")
+			os.system("cp \"" + line + "\" \"" + output + splits[len(splits) - 1] + "\"")

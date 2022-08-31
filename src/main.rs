@@ -92,22 +92,22 @@ fn main() {
         }
 
         let mut fields: Vec<_> = vec![
-            // BasicInfo {
-            //     name: "Rsvg".to_string(),
-            //     command: "rsvg-convert".to_string(),
-            //     output_png_added: "_rsvg.png",
-            //     possible_output_png_original: "".to_string(),
-            //     output_png: "".to_string(),
-            //     arguments: vec![
-            //         source_file.to_string(),
-            //         "-o".to_string(),
-            //         "OUTPUT_FILE".to_string(),
-            //         "-w".to_string(),
-            //         size_of_file.to_string(),
-            //         "-h".to_string(),
-            //         size_of_file.to_string(),
-            //     ],
-            // },
+            BasicInfo {
+                name: "Rsvg".to_string(),
+                command: "rsvg-convert".to_string(),
+                output_png_added: "_rsvg.png",
+                possible_output_png_original: "".to_string(),
+                output_png: "".to_string(),
+                arguments: vec![
+                    source_file.to_string(),
+                    "-o".to_string(),
+                    "OUTPUT_FILE".to_string(),
+                    "-w".to_string(),
+                    size_of_file.to_string(),
+                    "-h".to_string(),
+                    size_of_file.to_string(),
+                ],
+            },
             BasicInfo {
                 name: "Thorvg".to_string(),
                 command: thorvg_path.clone(),
@@ -120,18 +120,18 @@ fn main() {
                     format!("{}x{}", size_of_file, size_of_file),
                 ],
             },
-            BasicInfo {
-                name: "Thorvg PR".to_string(),
-                command: "/home/rafal/test/mg/build/src/bin/svg2png/svg2png".to_string(),
-                output_png_added: "_thorvg_PR.png",
-                possible_output_png_original: "".to_string(),
-                output_png: "".to_string(),
-                arguments: vec![
-                    source_file.to_string(),
-                    "-r".to_string(),
-                    format!("{}x{}", size_of_file, size_of_file),
-                ],
-            },
+            // BasicInfo {
+            //     name: "Thorvg PR".to_string(),
+            //     command: "/home/rafal/test/mg/build/src/bin/svg2png/svg2png".to_string(),
+            //     output_png_added: "_thorvg_PR.png",
+            //     possible_output_png_original: "".to_string(),
+            //     output_png: "".to_string(),
+            //     arguments: vec![
+            //         source_file.to_string(),
+            //         "-r".to_string(),
+            //         format!("{}x{}", size_of_file, size_of_file),
+            //     ],
+            // },
             // BasicInfo {
             //     name: "Inkscape".to_string(),
             //     command: "inkscape".to_string(),

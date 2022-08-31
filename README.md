@@ -1,6 +1,7 @@
 ## SVG regression tester
 
-This repository contains tool to automatically find if ThorVG, Rsvg, Inkscape or any other SVG converter, produce valid png files.
+This repository contains tool to automatically find if ThorVG, Rsvg, Inkscape or any other SVG converter, produce valid png files.  
+It can be used to check visually differences between two versions of same software.
 
 ## How it works
 By default, Rsvg and ThorVG produce png files from svg ones.  
@@ -8,13 +9,13 @@ Next this two files are compared with each other, and if are similar, then nothi
 Most of files differs on shadow size and other very small visible elements, so it is possible to set similarity level, which should part of such files ignore.
 
 ## Can it work with X, Y or Z tool/library?
-Yes, changes are very simple.  
-To add support for different library like rsvg, just replace logic of running rsvg or thorvg with own tool and everything should work fine.
+Yes, changes are very simple and require to add/modify fields structure inside main.rs file.
 
 ## Current Requirements
 Requirements:
 - Rsvg installed - on Ubuntu can be installed via `sudo apt install librsvg2-bin`
 - [ThorVG](https://github.com/Samsung/thorvg/) - the best is to compile it manually, since it is fast and quite simple
+
 Optional dependencies:
 - Inkscape - it is possible to use inkscape instead rsvg, but this requires to enable some code directly in src/main.rs
 
@@ -38,9 +39,13 @@ example usage
 ```
 app "/home/rafal/test/thorvg/build/src/bin/svg2png/svg2png" "input.txt" 500 10
 ```
+or
+```
+app "/home/rafal/test/thorvg/build/src/bin/svg2png/svg2png" "/home/folder" 500 10
+```
 ```
 <path_to_svg2png> - path to thorvg svg2png tool
-<path_to_files_to_check> - path to file with full paths in each line(like in example from above)
+<path_to_files_to_check> - path to file with full paths in each line(like in example from above) or path to folder from which are taken only files 1 folder depth
 <size_of_created_images> - width and height of created images, value 500 means that to test, thorvg and rsvg will create from svg files, png ones with size 500x500
 <similarity> - difference between images that will be ignored. 0 could find very small differences, line e.g. line different by 1px, so I use 10 which is I think optimal. When using bigger value, only files which differ a lot will be visible
 ```
