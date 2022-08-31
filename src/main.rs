@@ -1,11 +1,14 @@
 use std::env::args;
+use std::path::Path;
 use std::process::Command;
+use std::sync::atomic::{AtomicI32, Ordering};
 use std::{fs, process};
 
 use image_hasher::{HashAlg, HasherConfig};
 
 use bk_tree::BKTree;
 use rayon::prelude::*;
+use walkdir::WalkDir;
 
 struct Hamming;
 
@@ -35,24 +38,50 @@ fn main() {
         println!("You need to set 4 arguments - thorvg path, file with svg files to check(one per line), size of file(width is same as height), similarity(0 means very similar, bigger values check for less similar svgs)");
         process::exit(1);
     }
-
-    let lines: Vec<_> = match fs::read_to_string(&path_to_files_to_check) {
-        Ok(t) => t.split('\n').map(str::to_string).collect(),
-        Err(e) => {
-            println!(
-                "Failed to open file {}, reason {}",
-                path_to_files_to_check, e
-            );
-            process::exit(1);
+    let mut files_to_check = Vec::new();
+    if Path::new(&path_to_files_to_check).is_dir() {
+        for entry in WalkDir::new(&path_to_files_to_check)
+            .max_depth(1)
+            .into_iter()
+            .flatten()
+        {
+            let path = entry.path();
+            if !path.is_file() {
+                continue;
+            }
+            let full_path = match path.canonicalize() {
+                Ok(t) => t.to_string_lossy().to_string(),
+                Err(_) => continue,
+            };
+            if full_path.ends_with(".svg") {
+                files_to_check.push(full_path);
+            }
         }
-    };
+    } else {
+        files_to_check = match fs::read_to_string(&path_to_files_to_check) {
+            Ok(t) => t
+                .split('\n')
+                .map(|e| e.trim())
+                .map(str::to_string)
+                .filter(|e| e.ends_with(".svg"))
+                .collect(),
+            Err(e) => {
+                println!(
+                    "Failed to open file {}, reason {}",
+                    path_to_files_to_check, e
+                );
+                process::exit(1);
+            }
+        };
+    }
 
-    lines.par_iter().for_each(|line| {
-        let line = line.trim();
-        if !line.ends_with(".svg") {
-            return;
+    let atomic: AtomicI32 = AtomicI32::new(0);
+
+    files_to_check.par_iter().for_each(|source_file| {
+        let number = atomic.fetch_add(1, Ordering::Relaxed);
+        if number % 100 == 0 && number != 0 {
+            println!("-- {}/{}", number, files_to_check.len());
         }
-        let source_file = line;
 
         let thorvg_png_file;
         // let inkscape_png_file;
@@ -70,8 +99,8 @@ fn main() {
             args.push(source_file.to_string());
             args.push("-w".to_string());
             args.push(size_of_file.to_string());
-            // args.push("-h".to_string()); // Workaround, which allow to check if original image was rectangle
-            // args.push(size_of_file.to_string());
+            args.push("-h".to_string()); // Workaround, which allow to check if original image was rectangle
+            args.push(size_of_file.to_string());
 
             let _output = Command::new("rsvg-convert").args(args).output().unwrap();
 
@@ -103,14 +132,15 @@ fn main() {
             let _ = fs::copy(&old_png_file, &thorvg_png_file);
             let _ = fs::remove_file(&old_png_file);
 
-            // let err = String::from_utf8(output.stderr);
-            // if err.is_ok() && err != Ok("".to_string()) {
-            //     let message = err.unwrap();
-            //     if message.starts_with("Error reading ") {
-            //         return;
-            //     }
-            //     println!("ThorVG {:?} {}", message, source_file);
-            // }
+            let err = String::from_utf8(_output.stderr);
+            if let Ok(message) = err {
+                if !message.is_empty() {
+                    if message.starts_with("Error reading ") {
+                        return;
+                    }
+                    println!("ThorVG {:?} {}", message, source_file);
+                }
+            }
         }
         // // Inkscape Converter
         // {
@@ -156,7 +186,13 @@ fn main() {
         if thorvg_image.width() != rsvg_image.width()
             || thorvg_image.height() != rsvg_image.height()
         {
-            // println!("Ignored non square images thorvg {}x{}, rsvg {}x{}", thorvg_image.width(),thorvg_image.height(), rsvg_image.width(),rsvg_image.height());
+            println!(
+                "Ignored non square images thorvg {}x{}, rsvg {}x{}",
+                thorvg_image.width(),
+                thorvg_image.height(),
+                rsvg_image.width(),
+                rsvg_image.height()
+            );
             return;
         }
 
