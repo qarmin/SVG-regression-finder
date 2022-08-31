@@ -4,9 +4,8 @@ use std::process::Command;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::{fs, process};
 
-use image_hasher::{HashAlg, HasherConfig};
-
 use bk_tree::BKTree;
+use image_hasher::{HashAlg, HasherConfig};
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
@@ -20,6 +19,15 @@ impl bk_tree::Metric<Vec<u8>> for Hamming {
     fn threshold_distance(&self, a: &Vec<u8>, b: &Vec<u8>, _threshold: u32) -> Option<u32> {
         Some(self.distance(a, b))
     }
+}
+
+struct BasicInfo {
+    name: String,
+    command: String,
+    output_png_added: &'static str,
+    output_png: String,
+    arguments: Vec<String>,
+    possible_output_png_original: String,
 }
 
 fn main() {
@@ -79,119 +87,127 @@ fn main() {
 
     files_to_check.par_iter().for_each(|source_file| {
         let number = atomic.fetch_add(1, Ordering::Relaxed);
-        if number % 100 == 0 && number != 0 {
+        if number % 100 == 0 {
             println!("-- {}/{}", number, files_to_check.len());
         }
 
-        let thorvg_png_file;
-        // let inkscape_png_file;
-        let rsvg_png_file;
-        // Rsvg Converter
-        {
-            if let Some(source) = source_file.strip_suffix(".svg") {
-                rsvg_png_file = format!("{}_rsvg.png", source);
-            } else {
-                return;
-            }
+        let mut fields: Vec<_> = vec![
+            // BasicInfo {
+            //     name: "Rsvg".to_string(),
+            //     command: "rsvg-convert".to_string(),
+            //     output_png_added: "_rsvg.png",
+            //     possible_output_png_original: "".to_string(),
+            //     output_png: "".to_string(),
+            //     arguments: vec![
+            //         source_file.to_string(),
+            //         "-o".to_string(),
+            //         "OUTPUT_FILE".to_string(),
+            //         "-w".to_string(),
+            //         size_of_file.to_string(),
+            //         "-h".to_string(),
+            //         size_of_file.to_string(),
+            //     ],
+            // },
+            BasicInfo {
+                name: "Thorvg".to_string(),
+                command: thorvg_path.clone(),
+                output_png_added: "_thorvg.png",
+                possible_output_png_original: "".to_string(),
+                output_png: "".to_string(),
+                arguments: vec![
+                    source_file.to_string(),
+                    "-r".to_string(),
+                    format!("{}x{}", size_of_file, size_of_file),
+                ],
+            },
+            BasicInfo {
+                name: "Thorvg PR".to_string(),
+                command: "/home/rafal/test/mg/build/src/bin/svg2png/svg2png".to_string(),
+                output_png_added: "_thorvg_PR.png",
+                possible_output_png_original: "".to_string(),
+                output_png: "".to_string(),
+                arguments: vec![
+                    source_file.to_string(),
+                    "-r".to_string(),
+                    format!("{}x{}", size_of_file, size_of_file),
+                ],
+            },
+            // BasicInfo {
+            //     name: "Inkscape".to_string(),
+            //     command: "inkscape".to_string(),
+            //     output_png_added: "_inkscape.png",
+            //     possible_output_png_original: "".to_string(),
+            //     output_png: "".to_string(),
+            //     arguments: vec![
+            //         source_file.to_string(),
+            //         "--export-type=png".to_string(),
+            //         "-w".to_string(),
+            //         size_of_file.to_string(),
+            //         "-h".to_string(),
+            //         size_of_file.to_string(),
+            //     ],
+            // },
+        ];
+        assert_eq!(fields.len(), 2); // Only 2 are supported
+
+        for field in fields.iter_mut() {
+            field.output_png = source_file.replace(".svg", field.output_png_added);
+            field.possible_output_png_original = source_file.replace(".svg", ".png");
+
+            // Prepare arguments
             let mut args = Vec::new();
-            args.push("-o".to_string());
-            args.push(rsvg_png_file.to_string());
-            args.push(source_file.to_string());
-            args.push("-w".to_string());
-            args.push(size_of_file.to_string());
-            args.push("-h".to_string()); // Workaround, which allow to check if original image was rectangle
-            args.push(size_of_file.to_string());
-
-            let _output = Command::new("rsvg-convert").args(args).output().unwrap();
-
-            // let err = String::from_utf8(output.stderr);
-            // if err.is_ok() && err != Ok("".to_string()) {
-            //     let message = err.unwrap();
-            //     if message.starts_with("Error reading ") {
-            //         return;
-            //     }
-            //     println!("RSVG {:?} {}", message, source_file);
-            // }
-        }
-        // ThorVG Converter
-        {
-            let old_png_file;
-            if let Some(source) = source_file.strip_suffix(".svg") {
-                old_png_file = format!("{}.png", source);
-                thorvg_png_file = format!("{}_thorvg.png", source);
-            } else {
-                return;
+            for argument in &field.arguments {
+                args.push(argument.replace("OUTPUT_FILE", &field.output_png))
             }
-            let mut args = Vec::new();
-            args.push(source_file.to_string());
-            args.push("-r".to_string());
-            args.push(format!("{}x{}", size_of_file, size_of_file));
 
-            let _output = Command::new(&thorvg_path).args(args).output().unwrap();
+            // Run command
+            let _output = Command::new(&field.command).args(args).output().unwrap();
 
-            let _ = fs::copy(&old_png_file, &thorvg_png_file);
-            let _ = fs::remove_file(&old_png_file);
+            // Delete default created item
+            if Path::new(&field.possible_output_png_original).is_file() {
+                let _ = fs::copy(&field.possible_output_png_original, &field.output_png);
+                let _ = fs::remove_file(&field.possible_output_png_original);
+            }
 
-            let err = String::from_utf8(_output.stderr);
-            if let Ok(message) = err {
+            let err_message = String::from_utf8(_output.stderr);
+            let normal_message = String::from_utf8(_output.stdout);
+            if let Ok(message) = err_message {
                 if !message.is_empty() {
-                    if message.starts_with("Error reading ") {
-                        return;
-                    }
-                    println!("ThorVG {:?} {}", message, source_file);
+                    println!("{} {:?} {}", field.name, message, source_file);
+                }
+            }
+            if let Ok(message) = normal_message {
+                if !message.is_empty() {
+                    // println!("{} {:?} {}", field.name, message, source_file);
                 }
             }
         }
-        // // Inkscape Converter
-        // {
-        //     let old_png_file;
-        //     if let Some(source) = source_file.strip_suffix(".svg") {
-        //         old_png_file = format!("{}.png", source);
-        //         inkscape_png_file = format!("{}_inkscape.png", source);
-        //     } else {
-        //         return;
-        //     }
-        //     let args = vec![
-        //         source_file.to_string(),
-        //         "--export-type=png".to_string(),
-        //         // "-w".to_string(),
-        //         // size_of_file.to_string()),
-        //         "-h".to_string(),
-        //         size_of_file.to_string(),
-        //     ];
-        //
-        //     let _output = Command::new("inkscape").args(args).output().unwrap();
-        //
-        //     let _ = fs::copy(&old_png_file, &inkscape_png_file);
-        //     let _ = fs::remove_file(&old_png_file);
-        //     // println!("Inkscape {:?}", String::from_utf8(output.stdout));
-        // }
 
-        let thorvg_image = match image::open(&thorvg_png_file) {
+        let second_image = match image::open(&fields[1].output_png) {
             Ok(t) => t,
             Err(_) => {
-                // println!("Failed to open {}", thorvg_png_file);
+                println!("Failed to open {}", fields[1].output_png);
                 return;
             }
         };
-        let rsvg_image = match image::open(&rsvg_png_file) {
+        let first_image = match image::open(&fields[0].output_png) {
             Ok(t) => t,
             Err(_) => {
-                // println!("Failed to open {}", rsvg_png_file);
+                println!("Failed to open {}", fields[0].output_png);
                 return;
             }
         };
 
         // Both inkscape and rsvg works differently that ThorVG https://github.com/Samsung/thorvg/issues/1258
-        if thorvg_image.width() != rsvg_image.width()
-            || thorvg_image.height() != rsvg_image.height()
+        if second_image.width() != first_image.width()
+            || second_image.height() != first_image.height()
         {
             println!(
                 "Ignored non square images thorvg {}x{}, rsvg {}x{}",
-                thorvg_image.width(),
-                thorvg_image.height(),
-                rsvg_image.width(),
-                rsvg_image.height()
+                second_image.width(),
+                second_image.height(),
+                first_image.width(),
+                first_image.height()
             );
             return;
         }
@@ -201,13 +217,13 @@ fn main() {
             .hash_size(16, 16)
             .to_hasher();
 
-        let thorvg_hash = hasher.hash_image(&thorvg_image).as_bytes().to_vec();
-        let rsvg_hash = hasher.hash_image(&rsvg_image).as_bytes().to_vec();
+        let second_image_hash = hasher.hash_image(&second_image).as_bytes().to_vec();
+        let first_image_hash = hasher.hash_image(&first_image).as_bytes().to_vec();
         let mut bktree = BKTree::new(Hamming);
 
-        bktree.add(thorvg_hash);
+        bktree.add(second_image_hash);
 
-        let finds = bktree.find(&rsvg_hash, 9999).collect::<Vec<_>>();
+        let finds = bktree.find(&first_image_hash, 9999).collect::<Vec<_>>();
         let similarity_found = match finds.get(0) {
             Some(t) => t.0,
             None => 999999,
@@ -215,17 +231,17 @@ fn main() {
 
         if !finds.is_empty() && similarity_found <= similarity {
             // println!(
-            //     "VALID conversion, rsvg and thorvg have same output for {}",
-            //     source_file
+            //     "VALID conversion, {} and {} have same output for {}",
+            //     fields[0].name, fields[1].name, source_file
             // );
         } else {
             // println!(
-            //     "INVALID conversion, thorvg and rsvg results are different, difference {}\n\tSVG {}\n\tRsvg {}\n\tThorvg {}",
-            //     similarity_found, source_file, rsvg_png_file, thorvg_png_file
+            //     "INVALID conversion, {} and {} results are different, difference {}\n\tSVG {}\n\tFirst {}\n\tSecond {}",
+            //     fields[0].name,fields[1].name,similarity_found, source_file, fields[0].name,fields[1].name
             // );
             print!(
                 "\tfirefox {}; firefox {}; firefox {}",
-                source_file, rsvg_png_file, thorvg_png_file
+                source_file, fields[0].output_png, fields[1].output_png
             ); // I found that the best to compare images, is to open them in firefox and switch tabs,
             println!();
         }
