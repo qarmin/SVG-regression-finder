@@ -35,6 +35,8 @@ fn main() {
     let path_to_files_to_check;
     let size_of_file;
     let similarity;
+    let mut ignore_conversion_step = false;
+    let mut ignore_with_text = false;
 
     let os_args: Vec<_> = args().collect();
     if os_args.len() >= 5 {
@@ -42,6 +44,10 @@ fn main() {
         path_to_files_to_check = os_args[2].clone();
         size_of_file = os_args[3].parse::<u32>().unwrap();
         similarity = os_args[4].parse::<u32>().unwrap();
+        if os_args.len() >= 7 {
+            ignore_conversion_step = os_args[5].parse::<bool>().unwrap();
+            ignore_with_text = os_args[6].parse::<bool>().unwrap();
+        }
     } else {
         println!("You need to set 4 arguments - thorvg path, file with svg files to check(one per line), size of file(width is same as height), similarity(0 means very similar, bigger values check for less similar svgs)");
         process::exit(1);
@@ -160,25 +166,42 @@ fn main() {
                 args.push(argument.replace("OUTPUT_FILE", &field.output_png))
             }
 
-            // Run command
-            let _output = Command::new(&field.command).args(args).output().unwrap();
-
-            // Delete default created item
-            if Path::new(&field.possible_output_png_original).is_file() {
-                let _ = fs::copy(&field.possible_output_png_original, &field.output_png);
-                let _ = fs::remove_file(&field.possible_output_png_original);
-            }
-
-            let err_message = String::from_utf8(_output.stderr);
-            let normal_message = String::from_utf8(_output.stdout);
-            if let Ok(message) = err_message {
-                if !message.is_empty() {
-                    println!("{} {:?} {}", field.name, message, source_file);
+            if ignore_with_text {
+                match fs::read_to_string(&source_file) {
+                    Ok(t) => {
+                        if t.contains("</text>") {
+                            // println!("Ignoring {} with text", source_file);
+                            return;
+                        }
+                    }
+                    Err(_) => {
+                        return;
+                    }
                 }
             }
-            if let Ok(message) = normal_message {
-                if !message.is_empty() {
-                    // println!("{} {:?} {}", field.name, message, source_file);
+
+            if !ignore_conversion_step {
+                // Run command
+                let _output = Command::new(&field.command).args(args).output().unwrap();
+
+                // Delete default created item
+                if Path::new(&field.possible_output_png_original).is_file() {
+                    let _ = fs::copy(&field.possible_output_png_original, &field.output_png);
+                    let _ = fs::remove_file(&field.possible_output_png_original);
+                }
+
+                let err_message = String::from_utf8(_output.stderr);
+                let normal_message = String::from_utf8(_output.stdout);
+                if let Ok(message) = err_message {
+                    if !message.is_empty() {
+                        // println!("{} {:?} {}", field.name, message, source_file);
+                        return;
+                    }
+                }
+                if let Ok(message) = normal_message {
+                    if !message.is_empty() {
+                        // println!("{} {:?} {}", field.name, message, source_file);
+                    }
                 }
             }
         }
