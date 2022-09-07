@@ -114,6 +114,21 @@ fn main() {
                     size_of_file.to_string(),
                 ],
             },
+            // BasicInfo {
+            //     name: "Resvg".to_string(),
+            //     command: "resvg".to_string(),
+            //     output_png_added: "_resvg.png",
+            //     possible_output_png_original: "".to_string(),
+            //     output_png: "".to_string(),
+            //     arguments: vec![
+            //         source_file.to_string(),
+            //         "OUTPUT_FILE".to_string(),
+            //         "-w".to_string(),
+            //         size_of_file.to_string(),
+            //         "-h".to_string(),
+            //         size_of_file.to_string(),
+            //     ],
+            // },
             BasicInfo {
                 name: "Thorvg".to_string(),
                 command: thorvg_path.clone(),
@@ -169,7 +184,7 @@ fn main() {
             if ignore_with_text {
                 match fs::read_to_string(&source_file) {
                     Ok(t) => {
-                        if t.contains("</text>") {
+                        if t.contains("</text>") || t.contains("</filter>") {
                             // println!("Ignoring {} with text", source_file);
                             return;
                         }
@@ -221,14 +236,15 @@ fn main() {
             }
         };
 
-        // Both inkscape and rsvg works differently that ThorVG https://github.com/Samsung/thorvg/issues/1258
         if second_image.width() != first_image.width()
             || second_image.height() != first_image.height()
         {
             println!(
-                "Ignored non square images thorvg {}x{}, rsvg {}x{}",
+                "Ignored non square images {} {}x{}, {} {}x{}",
+                fields[1].output_png,
                 second_image.width(),
                 second_image.height(),
+                fields[0].output_png,
                 first_image.width(),
                 first_image.height()
             );
