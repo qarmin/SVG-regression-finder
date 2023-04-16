@@ -40,8 +40,13 @@ struct Settings {
     similarity: u32,
     output_folder: String,
 
-    thorvg_path: String,
+    first_tool_path: String,
+    first_tool_png_name_ending: String,
+    first_tool_arguments: String,
+
     other_tool_path: String,
+    other_tool_png_name_ending: String,
+    other_tool_arguments: String,
 }
 
 fn load_settings() -> Settings {
@@ -54,7 +59,7 @@ fn load_settings() -> Settings {
         .unwrap();
 
     let general_settings = config["general"].clone();
-    let thorvg_settings = config["thorvg"].clone();
+    let first_tool_settings = config["first_tool"].clone();
     let other_tool_settings = config["other_tool"].clone();
     Settings {
         folder_with_files_to_check: general_settings["folder_with_files_to_check"].clone(),
@@ -65,8 +70,12 @@ fn load_settings() -> Settings {
         ignore_with_text: general_settings["ignore_with_text"].parse().unwrap(),
         similarity: general_settings["similarity"].parse().unwrap(),
         output_folder: general_settings["output_folder"].clone(),
-        thorvg_path: thorvg_settings["path"].clone(),
+        first_tool_path: first_tool_settings["path"].clone(),
+        first_tool_png_name_ending: first_tool_settings["png_name_ending"].clone(),
+        first_tool_arguments: first_tool_settings["arguments"].clone(),
         other_tool_path: other_tool_settings["path"].clone(),
+        other_tool_png_name_ending: other_tool_settings["png_name_ending"].clone(),
+        other_tool_arguments: other_tool_settings["arguments"].clone(),
     }
 }
 
@@ -110,6 +119,22 @@ fn find_files(settings: &Settings) -> Vec<String> {
     files_to_check
 }
 
+fn generate_command_from_items(
+    name: &str,
+    arguments: &str,
+    source_file: &str,
+    output_file: &str,
+    px_size_of_generated_file: u32,
+) -> Command {
+    let new_arguments = arguments
+        .replace("{FILE}", source_file)
+        .replace("{OUTPUT_FILE}", output_file)
+        .replace("{SIZE}", &px_size_of_generated_file.to_string());
+    let mut comm = Command::new(name);
+    comm.args(new_arguments.split(" "));
+    comm
+}
+
 fn main() {
     let settings = load_settings();
     let files_to_check = find_files(&settings);
@@ -121,83 +146,6 @@ fn main() {
         if number % 100 == 0 {
             println!("-- {}/{}", number, files_to_check.len());
         }
-
-        let mut fields: Vec<_> = vec![
-            BasicInfo {
-                name: "Rsvg".to_string(),
-                command: "rsvg-convert".to_string(),
-                output_png_added: "_rsvg.png",
-                possible_output_png_original: "".to_string(),
-                output_png: "".to_string(),
-                arguments: vec![
-                    source_file.to_string(),
-                    "-o".to_string(),
-                    "OUTPUT_FILE".to_string(),
-                    "-w".to_string(),
-                    settings.px_size_of_generated_file.to_string(),
-                    "-h".to_string(),
-                    settings.px_size_of_generated_file.to_string(),
-                ],
-            },
-            // BasicInfo {
-            //     name: "Resvg".to_string(),
-            //     command: "resvg".to_string(),
-            //     output_png_added: "_resvg.png",
-            //     possible_output_png_original: "".to_string(),
-            //     output_png: "".to_string(),
-            //     arguments: vec![
-            //         source_file.to_string(),
-            //         "OUTPUT_FILE".to_string(),
-            //         "-w".to_string(),
-            //         size_of_file.to_string(),
-            //         "-h".to_string(),
-            //         size_of_file.to_string(),
-            //     ],
-            // },
-            BasicInfo {
-                name: "Thorvg".to_string(),
-                command: settings.thorvg_path.clone(),
-                output_png_added: "_thorvg.png",
-                possible_output_png_original: "".to_string(),
-                output_png: "".to_string(),
-                arguments: vec![
-                    source_file.to_string(),
-                    "-r".to_string(),
-                    format!(
-                        "{}x{}",
-                        settings.px_size_of_generated_file, settings.px_size_of_generated_file
-                    ),
-                ],
-            },
-            // BasicInfo {
-            //     name: "Thorvg PR".to_string(),
-            //     command: "/home/rafal/test/mg/build/src/bin/svg2png/svg2png".to_string(),
-            //     output_png_added: "_thorvg_PR.png",
-            //     possible_output_png_original: "".to_string(),
-            //     output_png: "".to_string(),
-            //     arguments: vec![
-            //         source_file.to_string(),
-            //         "-r".to_string(),
-            //         format!("{}x{}", size_of_file, size_of_file),
-            //     ],
-            // },
-            // BasicInfo {
-            //     name: "Inkscape".to_string(),
-            //     command: "inkscape".to_string(),
-            //     output_png_added: "_inkscape.png",
-            //     possible_output_png_original: "".to_string(),
-            //     output_png: "".to_string(),
-            //     arguments: vec![
-            //         source_file.to_string(),
-            //         "--export-type=png".to_string(),
-            //         "-w".to_string(),
-            //         size_of_file.to_string(),
-            //         "-h".to_string(),
-            //         size_of_file.to_string(),
-            //     ],
-            // },
-        ];
-        assert_eq!(fields.len(), 2); // Only 2 are supported
 
         if settings.ignore_with_text {
             match fs::read_to_string(source_file) {
@@ -213,24 +161,38 @@ fn main() {
             }
         }
 
-        for field in fields.iter_mut() {
-            field.output_png = source_file.replace(".svg", field.output_png_added);
-            field.possible_output_png_original = source_file.replace(".svg", ".png");
+        let first_output_png = source_file.replace(".svg", &settings.first_tool_png_name_ending);
+        let other_output_png = source_file.replace(".svg", &settings.other_tool_png_name_ending);
 
-            // Prepare arguments
-            let mut args = Vec::new();
-            for argument in &field.arguments {
-                args.push(argument.replace("OUTPUT_FILE", &field.output_png))
-            }
+        let possible_output_png_original = source_file.replace(".svg", ".png"); // Usually png files just are created automatically by changing extensions
 
+        let mut first_command = generate_command_from_items(
+            &settings.first_tool_path,
+            &settings.first_tool_arguments,
+            &source_file,
+            &possible_output_png_original,
+            settings.px_size_of_generated_file,
+        );
+        let mut other_command = generate_command_from_items(
+            &settings.other_tool_path,
+            &settings.other_tool_arguments,
+            &source_file,
+            &possible_output_png_original,
+            settings.px_size_of_generated_file,
+        );
+
+        for (mut command, output_png) in [
+            (first_command, &first_output_png),
+            (other_command, &other_output_png),
+        ] {
             if !settings.ignore_conversion_step {
                 // Run command
-                let _output = Command::new(&field.command).args(args).output().unwrap();
+                let _output = command.spawn().unwrap().wait_with_output().unwrap();
 
                 // Delete default created item
-                if Path::new(&field.possible_output_png_original).is_file() {
-                    let _ = fs::copy(&field.possible_output_png_original, &field.output_png);
-                    let _ = fs::remove_file(&field.possible_output_png_original);
+                if Path::new(&possible_output_png_original).is_file() {
+                    let _ = fs::copy(&possible_output_png_original, &output_png);
+                    let _ = fs::remove_file(&possible_output_png_original);
                 }
 
                 let err_message = String::from_utf8(_output.stderr);
@@ -248,108 +210,119 @@ fn main() {
                 }
             }
         }
-
-        let second_image = match image::open(&fields[1].output_png) {
-            Ok(t) => t,
-            Err(_) => {
-                println!("Failed to open {}", fields[1].output_png);
-                return;
-            }
-        };
-        let first_image = match image::open(&fields[0].output_png) {
-            Ok(t) => t,
-            Err(_) => {
-                println!("Failed to open {}", fields[0].output_png);
-                return;
-            }
-        };
-
-        if second_image.width() != first_image.width()
-            || second_image.height() != first_image.height()
-        {
-            println!(
-                "Ignored non square images {} {}x{}, {} {}x{}",
-                fields[1].output_png,
-                second_image.width(),
-                second_image.height(),
-                fields[0].output_png,
-                first_image.width(),
-                first_image.height()
-            );
+        compare_images(
+            &source_file,
+            &first_output_png,
+            &other_output_png,
+            &settings,
+        );
+    });
+}
+fn compare_images(
+    source_file: &str,
+    first_output_png: &str,
+    other_output_png: &str,
+    settings: &Settings,
+) {
+    let first_image = match image::open(&first_output_png) {
+        Ok(t) => t,
+        Err(_) => {
+            println!("Failed to open {}", first_output_png);
             return;
         }
-
-        let hasher = HasherConfig::new()
-            .hash_alg(HashAlg::Blockhash) // Looks that this is quite good hash algorithm for images with alpha, other not works well
-            .hash_size(16, 16)
-            .to_hasher();
-
-        let second_image_hash = hasher.hash_image(&second_image).as_bytes().to_vec();
-        let first_image_hash = hasher.hash_image(&first_image).as_bytes().to_vec();
-        let mut bktree = BKTree::new(Hamming);
-
-        bktree.add(second_image_hash);
-
-        let finds = bktree.find(&first_image_hash, 9999).collect::<Vec<_>>();
-        let similarity_found = match finds.get(0) {
-            Some(t) => t.0,
-            None => 999999,
-        };
-
-        if !finds.is_empty() && similarity_found <= settings.similarity {
-            // println!(
-            //     "VALID conversion, {} and {} have same output for {}",
-            //     fields[0].name, fields[1].name, source_file
-            // );
-        } else {
-            // println!(
-            //     "INVALID conversion, {} and {} results are different, difference {}\n\tSVG {}\n\tFirst {}\n\tSecond {}",
-            //     fields[0].name,fields[1].name,similarity_found, source_file, fields[0].name,fields[1].name
-            // );
-            print!(
-                "\tfirefox {}; firefox {}; firefox {}",
-                source_file, fields[0].output_png, fields[1].output_png
-            ); // I found that the best to compare images, is to open them in firefox and switch tabs,
-            fs::copy(
-                &fields[0].output_png,
-                format!(
-                    "{}/{}",
-                    settings.output_folder,
-                    Path::new(&fields[0].output_png)
-                        .file_name()
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                ),
-            )
-            .unwrap();
-            fs::copy(
-                &fields[1].output_png,
-                format!(
-                    "{}/{}",
-                    settings.output_folder,
-                    Path::new(&fields[1].output_png)
-                        .file_name()
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                ),
-            )
-            .unwrap();
-            fs::copy(
-                &source_file,
-                format!(
-                    "{}/{}",
-                    settings.output_folder,
-                    Path::new(&source_file)
-                        .file_name()
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                ),
-            )
-            .unwrap();
-            println!();
+    };
+    let second_image = match image::open(&other_output_png) {
+        Ok(t) => t,
+        Err(_) => {
+            println!("Failed to open {}", other_output_png);
+            return;
         }
-    });
+    };
+
+    if second_image.width() != first_image.width() || second_image.height() != first_image.height()
+    {
+        println!(
+            "Ignored non square images {} {}x{}, {} {}x{}",
+            other_output_png,
+            second_image.width(),
+            second_image.height(),
+            first_output_png,
+            first_image.width(),
+            first_image.height()
+        );
+        return;
+    }
+
+    let hasher = HasherConfig::new()
+        .hash_alg(HashAlg::Blockhash) // Looks that this is quite good hash algorithm for images with alpha, other not works well
+        .hash_size(16, 16)
+        .to_hasher();
+
+    let second_image_hash = hasher.hash_image(&second_image).as_bytes().to_vec();
+    let first_image_hash = hasher.hash_image(&first_image).as_bytes().to_vec();
+    let mut bktree = BKTree::new(Hamming);
+
+    bktree.add(second_image_hash);
+
+    let finds = bktree.find(&first_image_hash, 9999).collect::<Vec<_>>();
+    let similarity_found = match finds.get(0) {
+        Some(t) => t.0,
+        None => 999999,
+    };
+
+    if !finds.is_empty() && similarity_found <= settings.similarity {
+        // println!(
+        //     "VALID conversion, {} and {} have same output for {}",
+        //     fields[0].name, fields[1].name, source_file
+        // );
+    } else {
+        // println!(
+        //     "INVALID conversion, {} and {} results are different, difference {}\n\tSVG {}\n\tFirst {}\n\tSecond {}",
+        //     fields[0].name,fields[1].name,similarity_found, source_file, fields[0].name,fields[1].name
+        // );
+        print!(
+            "\tfirefox {}; firefox {}; firefox {}",
+            source_file, first_output_png, other_output_png
+        ); // I found that the best to compare images, is to open them in firefox and switch tabs,
+        fs::copy(
+            &first_output_png,
+            format!(
+                "{}/{}",
+                settings.output_folder,
+                Path::new(&first_output_png)
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+            ),
+        )
+        .unwrap();
+        fs::copy(
+            &other_output_png,
+            format!(
+                "{}/{}",
+                settings.output_folder,
+                Path::new(&other_output_png)
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+            ),
+        )
+        .unwrap();
+        fs::copy(
+            &source_file,
+            format!(
+                "{}/{}",
+                settings.output_folder,
+                Path::new(&source_file)
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+            ),
+        )
+        .unwrap();
+        println!();
+    }
 }
