@@ -2,9 +2,12 @@
 folder_with_files_to_check = "/home/rafal/Desktop/SVGBigPack/"
 px_size_of_generated_file = 400
 ignore_conversion_step = false # Ignore step with conversion files from svg to png, just compare files
+ignore_similarity_checking_step = false # Useful to finding problems with generating files
 ignore_with_text = true # Thorvg not supports files with text
 similarity = 50 # Bigger similiarity will show only broken files that are completelly different, looks that 0-100
 output_folder = "/home/rafal/Desktop/BrokenSVG" # Place where to save files(Input and output that show differences)
+limit_files = 300 # Limit checked files, useful if you are just checking this, 0 will remove limit of checked files
+remove_files_from_output_folder_at_start = true # Useful if you run app with different settings and you don't want to remove files one by one
 
 [first_tool]
 name = "ThorVG"

@@ -1,14 +1,12 @@
-use std::collections::HashMap;
-
-use std::path::Path;
-use std::process::Command;
-use std::sync::atomic::{AtomicI32, Ordering};
-use std::{fs, process};
-
 use bk_tree::BKTree;
 use config::Config;
 use image_hasher::{HashAlg, HasherConfig};
 use rayon::prelude::*;
+use std::collections::HashMap;
+use std::path::Path;
+use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicI32, Ordering};
+use std::{fs, process};
 use walkdir::WalkDir;
 
 struct Hamming;
@@ -30,6 +28,9 @@ struct Settings {
     ignore_with_text: bool,
     similarity: u32,
     output_folder: String,
+    limit_files: usize,
+    remove_files_from_output_folder_at_start: bool,
+    ignore_similarity_checking_step: bool,
 
     first_tool_path: String,
     first_tool_png_name_ending: String,
@@ -61,6 +62,14 @@ fn load_settings() -> Settings {
         ignore_with_text: general_settings["ignore_with_text"].parse().unwrap(),
         similarity: general_settings["similarity"].parse().unwrap(),
         output_folder: general_settings["output_folder"].clone(),
+        limit_files: general_settings["limit_files"].parse().unwrap(),
+        remove_files_from_output_folder_at_start: general_settings
+            ["remove_files_from_output_folder_at_start"]
+            .parse()
+            .unwrap(),
+        ignore_similarity_checking_step: general_settings["ignore_similarity_checking_step"]
+            .parse()
+            .unwrap(),
         first_tool_path: first_tool_settings["path"].clone(),
         first_tool_png_name_ending: first_tool_settings["png_name_ending"].clone(),
         first_tool_arguments: first_tool_settings["arguments"].clone(),
@@ -128,9 +137,16 @@ fn generate_command_from_items(
 
 fn main() {
     let settings = load_settings();
-    let files_to_check = find_files(&settings);
-    let files_to_check = files_to_check[..100].to_vec(); // TODO remove it
+    let mut files_to_check = find_files(&settings);
+    if settings.limit_files != 0 {
+        files_to_check = files_to_check[..settings.limit_files].to_vec();
+    }
     let atomic: AtomicI32 = AtomicI32::new(0);
+    // Remove output files if exists
+    if settings.remove_files_from_output_folder_at_start {
+        let _ = fs::remove_dir_all(&settings.output_folder);
+    }
+    let _ = fs::create_dir_all(&settings.output_folder);
 
     files_to_check.par_iter().for_each(|source_file| {
         let number = atomic.fetch_add(1, Ordering::Relaxed);
@@ -178,7 +194,13 @@ fn main() {
         ] {
             if !settings.ignore_conversion_step {
                 // Run command
-                let output = command.spawn().unwrap().wait_with_output().unwrap();
+                let output = command
+                    .stderr(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .spawn()
+                    .unwrap()
+                    .wait_with_output()
+                    .unwrap();
 
                 // Delete default created item
                 if Path::new(&possible_output_png_original).is_file() {
@@ -190,7 +212,14 @@ fn main() {
                 let normal_message = String::from_utf8(output.stdout);
                 if let Ok(message) = err_message {
                     if !message.is_empty() {
-                        // println!("{} {:?} {}", field.name, message, source_file);
+                        println!(
+                            "\n\n{} {} -\ncommand {:?} {:?}",
+                            message,
+                            source_file,
+                            command.get_program(),
+                            command.get_args()
+                        );
+                        println!("{source_file}");
                         return;
                     }
                 }
@@ -201,7 +230,9 @@ fn main() {
                 }
             }
         }
-        compare_images(source_file, &first_output_png, &other_output_png, &settings);
+        if !settings.ignore_similarity_checking_step {
+            compare_images(source_file, &first_output_png, &other_output_png, &settings);
+        }
     });
 }
 fn compare_images(
@@ -261,7 +292,7 @@ fn compare_images(
         //     "INVALID conversion, {} and {} results are different, difference {}\n\tSVG {}\n\tFirst {}\n\tSecond {}",
         //     fields[0].name,fields[1].name,similarity_found, source_file, fields[0].name,fields[1].name
         // );
-        print!("\tfirefox {source_file}; firefox {first_output_png}; firefox {other_output_png}"); // I found that the best to compare images, is to open them in firefox and switch tabs,
+        // print!("\tfirefox {source_file}; firefox {first_output_png}; firefox {other_output_png}"); // I found that the best to compare images, is to open them in firefox and switch tabs,
         fs::copy(
             first_output_png,
             format!(
@@ -301,6 +332,6 @@ fn compare_images(
             ),
         )
         .unwrap();
-        println!();
+        // println!();
     }
 }
