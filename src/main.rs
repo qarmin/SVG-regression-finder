@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::env::args;
+
 use std::path::Path;
 use std::process::Command;
 use std::sync::atomic::{AtomicI32, Ordering};
@@ -21,15 +21,6 @@ impl bk_tree::Metric<Vec<u8>> for Hamming {
     fn threshold_distance(&self, a: &Vec<u8>, b: &Vec<u8>, _threshold: u32) -> Option<u32> {
         Some(self.distance(a, b))
     }
-}
-
-struct BasicInfo {
-    name: String,
-    command: String,
-    output_png_added: &'static str,
-    output_png: String,
-    arguments: Vec<String>,
-    possible_output_png_original: String,
 }
 
 struct Settings {
@@ -103,7 +94,7 @@ fn find_files(settings: &Settings) -> Vec<String> {
         files_to_check = match fs::read_to_string(&settings.folder_with_files_to_check) {
             Ok(t) => t
                 .split('\n')
-                .map(|e| e.trim())
+                .map(str::trim)
                 .map(str::to_string)
                 .filter(|e| e.ends_with(".svg"))
                 .collect(),
@@ -131,7 +122,7 @@ fn generate_command_from_items(
         .replace("{OUTPUT_FILE}", output_file)
         .replace("{SIZE}", &px_size_of_generated_file.to_string());
     let mut comm = Command::new(name);
-    comm.args(new_arguments.split(" "));
+    comm.args(new_arguments.split(' '));
     comm
 }
 
@@ -166,17 +157,17 @@ fn main() {
 
         let possible_output_png_original = source_file.replace(".svg", ".png"); // Usually png files just are created automatically by changing extensions
 
-        let mut first_command = generate_command_from_items(
+        let first_command = generate_command_from_items(
             &settings.first_tool_path,
             &settings.first_tool_arguments,
-            &source_file,
+            source_file,
             &possible_output_png_original,
             settings.px_size_of_generated_file,
         );
-        let mut other_command = generate_command_from_items(
+        let other_command = generate_command_from_items(
             &settings.other_tool_path,
             &settings.other_tool_arguments,
-            &source_file,
+            source_file,
             &possible_output_png_original,
             settings.px_size_of_generated_file,
         );
@@ -187,16 +178,16 @@ fn main() {
         ] {
             if !settings.ignore_conversion_step {
                 // Run command
-                let _output = command.spawn().unwrap().wait_with_output().unwrap();
+                let output = command.spawn().unwrap().wait_with_output().unwrap();
 
                 // Delete default created item
                 if Path::new(&possible_output_png_original).is_file() {
-                    let _ = fs::copy(&possible_output_png_original, &output_png);
+                    let _ = fs::copy(&possible_output_png_original, output_png);
                     let _ = fs::remove_file(&possible_output_png_original);
                 }
 
-                let err_message = String::from_utf8(_output.stderr);
-                let normal_message = String::from_utf8(_output.stdout);
+                let err_message = String::from_utf8(output.stderr);
+                let normal_message = String::from_utf8(output.stdout);
                 if let Ok(message) = err_message {
                     if !message.is_empty() {
                         // println!("{} {:?} {}", field.name, message, source_file);
@@ -211,7 +202,7 @@ fn main() {
             }
         }
         compare_images(
-            &source_file,
+            source_file,
             &first_output_png,
             &other_output_png,
             &settings,
@@ -224,19 +215,14 @@ fn compare_images(
     other_output_png: &str,
     settings: &Settings,
 ) {
-    let first_image = match image::open(&first_output_png) {
-        Ok(t) => t,
-        Err(_) => {
-            println!("Failed to open {}", first_output_png);
+    let Ok(first_image) = image::open(first_output_png)  else {
+            println!("Failed to open {first_output_png}");
             return;
-        }
+
     };
-    let second_image = match image::open(&other_output_png) {
-        Ok(t) => t,
-        Err(_) => {
-            println!("Failed to open {}", other_output_png);
+    let Ok(second_image) = image::open(other_output_png) else  {
+            println!("Failed to open {other_output_png}");
             return;
-        }
     };
 
     if second_image.width() != first_image.width() || second_image.height() != first_image.height()
@@ -267,7 +253,7 @@ fn compare_images(
     let finds = bktree.find(&first_image_hash, 9999).collect::<Vec<_>>();
     let similarity_found = match finds.get(0) {
         Some(t) => t.0,
-        None => 999999,
+        None => 999_999,
     };
 
     if !finds.is_empty() && similarity_found <= settings.similarity {
@@ -281,11 +267,10 @@ fn compare_images(
         //     fields[0].name,fields[1].name,similarity_found, source_file, fields[0].name,fields[1].name
         // );
         print!(
-            "\tfirefox {}; firefox {}; firefox {}",
-            source_file, first_output_png, other_output_png
+            "\tfirefox {source_file}; firefox {first_output_png}; firefox {other_output_png}"
         ); // I found that the best to compare images, is to open them in firefox and switch tabs,
         fs::copy(
-            &first_output_png,
+            first_output_png,
             format!(
                 "{}/{}",
                 settings.output_folder,
@@ -298,7 +283,7 @@ fn compare_images(
         )
         .unwrap();
         fs::copy(
-            &other_output_png,
+            other_output_png,
             format!(
                 "{}/{}",
                 settings.output_folder,
@@ -311,7 +296,7 @@ fn compare_images(
         )
         .unwrap();
         fs::copy(
-            &source_file,
+            source_file,
             format!(
                 "{}/{}",
                 settings.output_folder,
