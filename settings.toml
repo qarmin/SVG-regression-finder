@@ -1,0 +1,34 @@
+[general]
+folder_with_files_to_check = "/home/rafal/Desktop/SVGBigPack/"
+px_size_of_generated_file = 400
+ignore_conversion_step = false # Ignore step with conversion files from svg to png, just compare files
+ignore_with_text = true # Thorvg not supports files with text
+similarity = 50 # Bigger similiarity will show only broken files that are completelly different, looks that 0-100
+output_folder = "/home/rafal/Desktop/BrokenSVG" # Place where to save files(Input and output that show differences)
+
+[thorvg]
+name = "ThorVG"
+path = "/home/rafal/test/thorvg/build/src/bin/svg2png/svg2png"
+png_name_ending = "_thorvg.png"
+arguments = "{FILE} -r {SIZE}x{SIZE}"
+
+[other_tool]
+path = "rsvg-convert"
+
+[rsvg]
+name = "rsvg"
+path = "rsvg-convert"
+png_name_ending = "_rsvg.png"
+arguments = "{FILE} -o {OUTPUT_FILE} -w {SIZE} -h {SIZE}"
+
+[resvg]
+name = "resvg"
+path = "resvg"
+png_name_ending = "_resvg.png"
+arguments = "{FILE} {OUTPUT_FILE} -w {SIZE} -h {SIZE}"
+
+[inkscape]
+name = "inkscape"
+path = "inkscape"
+png_name_ending = "_inkscape.png"
+arguments = "{FILE} --export-type=png -w {SIZE} -h {SIZE}"
