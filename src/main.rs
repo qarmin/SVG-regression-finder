@@ -201,12 +201,7 @@ fn main() {
                 }
             }
         }
-        compare_images(
-            source_file,
-            &first_output_png,
-            &other_output_png,
-            &settings,
-        );
+        compare_images(source_file, &first_output_png, &other_output_png, &settings);
     });
 }
 fn compare_images(
@@ -228,7 +223,7 @@ fn compare_images(
     if second_image.width() != first_image.width() || second_image.height() != first_image.height()
     {
         println!(
-            "Ignored non square images {} {}x{}, {} {}x{}",
+            "Ignored images with non equal lengths {} {}x{}, {} {}x{}",
             other_output_png,
             second_image.width(),
             second_image.height(),
@@ -266,9 +261,7 @@ fn compare_images(
         //     "INVALID conversion, {} and {} results are different, difference {}\n\tSVG {}\n\tFirst {}\n\tSecond {}",
         //     fields[0].name,fields[1].name,similarity_found, source_file, fields[0].name,fields[1].name
         // );
-        print!(
-            "\tfirefox {source_file}; firefox {first_output_png}; firefox {other_output_png}"
-        ); // I found that the best to compare images, is to open them in firefox and switch tabs,
+        print!("\tfirefox {source_file}; firefox {first_output_png}; firefox {other_output_png}"); // I found that the best to compare images, is to open them in firefox and switch tabs,
         fs::copy(
             first_output_png,
             format!(
