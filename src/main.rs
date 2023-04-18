@@ -1,12 +1,13 @@
-use bk_tree::BKTree;
-use config::Config;
-use image_hasher::{HashAlg, HasherConfig};
-use rayon::prelude::*;
 use std::collections::HashMap;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::{fs, process};
+
+use bk_tree::BKTree;
+use config::Config;
+use image_hasher::{HashAlg, HasherConfig};
+use rayon::prelude::*;
 use walkdir::WalkDir;
 
 struct Hamming;
@@ -25,12 +26,13 @@ struct Settings {
     folder_with_files_to_check: String,
     px_size_of_generated_file: u32,
     ignore_conversion_step: bool,
-    ignore_with_text: bool,
+    ignore_thorvg_not_supported_items: bool,
     similarity: u32,
     output_folder: String,
     limit_files: usize,
     remove_files_from_output_folder_at_start: bool,
     ignore_similarity_checking_step: bool,
+    debug_show_always_output: bool,
 
     first_tool_path: String,
     first_tool_png_name_ending: String,
@@ -59,7 +61,9 @@ fn load_settings() -> Settings {
             .parse()
             .unwrap(),
         ignore_conversion_step: general_settings["ignore_conversion_step"].parse().unwrap(),
-        ignore_with_text: general_settings["ignore_with_text"].parse().unwrap(),
+        ignore_thorvg_not_supported_items: general_settings["ignore_thorvg_not_supported_items"]
+            .parse()
+            .unwrap(),
         similarity: general_settings["similarity"].parse().unwrap(),
         output_folder: general_settings["output_folder"].clone(),
         limit_files: general_settings["limit_files"].parse().unwrap(),
@@ -76,6 +80,9 @@ fn load_settings() -> Settings {
         other_tool_path: other_tool_settings["path"].clone(),
         other_tool_png_name_ending: other_tool_settings["png_name_ending"].clone(),
         other_tool_arguments: other_tool_settings["arguments"].clone(),
+        debug_show_always_output: general_settings["debug_show_always_output"]
+            .parse()
+            .unwrap(),
     }
 }
 
@@ -126,12 +133,14 @@ fn generate_command_from_items(
     output_file: &str,
     px_size_of_generated_file: u32,
 ) -> Command {
-    let new_arguments = arguments
-        .replace("{FILE}", source_file)
-        .replace("{OUTPUT_FILE}", output_file)
-        .replace("{SIZE}", &px_size_of_generated_file.to_string());
+    let new_arguments = arguments.replace("{SIZE}", &px_size_of_generated_file.to_string());
     let mut comm = Command::new(name);
-    comm.args(new_arguments.split(' '));
+    // FILE must be renamed after splitting arguments by space, because source_file may contain spaces
+    // and broke file
+    comm.args(new_arguments.split(' ').map(|e| {
+        e.replace("{FILE}", source_file)
+            .replace("{OUTPUT_FILE}", output_file)
+    }));
     comm
 }
 
@@ -141,6 +150,7 @@ fn main() {
     if settings.limit_files != 0 {
         files_to_check = files_to_check[..settings.limit_files].to_vec();
     }
+
     let atomic: AtomicI32 = AtomicI32::new(0);
     // Remove output files if exists
     if settings.remove_files_from_output_folder_at_start {
@@ -154,15 +164,12 @@ fn main() {
             println!("-- {}/{}", number, files_to_check.len());
         }
 
-        if settings.ignore_with_text {
-            match fs::read_to_string(source_file) {
-                Ok(t) => {
-                    if t.contains("</text>") || t.contains("</filter>") {
-                        // println!("Ignoring {} with text", source_file);
-                        return;
-                    }
-                }
-                Err(_) => {
+        if settings.ignore_thorvg_not_supported_items {
+            if let Ok(t) = fs::read_to_string(source_file) {
+                if t.contains("<text") || t.contains("<filter") || t.contains("<image")
+                // https://github.com/thorvg/thorvg/issues/1367
+                {
+                    // println!("Ignoring {} with text", source_file);
                     return;
                 }
             }
@@ -210,6 +217,11 @@ fn main() {
 
                 let err_message = String::from_utf8(output.stderr);
                 let normal_message = String::from_utf8(output.stdout);
+
+                if settings.debug_show_always_output {
+                    println!("{source_file}\nERR: {err_message:?}\nOUT: {normal_message:?}\nSTATUS: {}\n", output.status)
+                }
+
                 if let Ok(message) = err_message {
                     if !message.is_empty() {
                         println!(
@@ -235,20 +247,26 @@ fn main() {
         }
     });
 }
+
 fn compare_images(
     source_file: &str,
     first_output_png: &str,
     other_output_png: &str,
     settings: &Settings,
 ) {
-    let Ok(first_image) = image::open(first_output_png)  else {
-            println!("Failed to open {first_output_png}");
+    let first_image = match image::open(first_output_png) {
+        Ok(t) => t,
+        Err(e) => {
+            println!("Failed to open {first_output_png}, reason {e}");
             return;
-
+        }
     };
-    let Ok(second_image) = image::open(other_output_png) else  {
-            println!("Failed to open {other_output_png}");
+    let second_image = match image::open(other_output_png) {
+        Ok(t) => t,
+        Err(e) => {
+            println!("Failed to open {other_output_png}, reason {e}");
             return;
+        }
     };
 
     if second_image.width() != first_image.width() || second_image.height() != first_image.height()
@@ -293,45 +311,25 @@ fn compare_images(
         //     fields[0].name,fields[1].name,similarity_found, source_file, fields[0].name,fields[1].name
         // );
         // print!("\tfirefox {source_file}; firefox {first_output_png}; firefox {other_output_png}"); // I found that the best to compare images, is to open them in firefox and switch tabs,
-        fs::copy(
-            first_output_png,
-            format!(
-                "{}/{}",
-                settings.output_folder,
-                Path::new(&first_output_png)
-                    .file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-            ),
-        )
-        .unwrap();
-        fs::copy(
-            other_output_png,
-            format!(
-                "{}/{}",
-                settings.output_folder,
-                Path::new(&other_output_png)
-                    .file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-            ),
-        )
-        .unwrap();
-        fs::copy(
-            source_file,
-            format!(
-                "{}/{}",
-                settings.output_folder,
-                Path::new(&source_file)
-                    .file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-            ),
-        )
-        .unwrap();
+        copy_to_file_name(first_output_png, &settings.output_folder);
+        copy_to_file_name(other_output_png, &settings.output_folder);
+        copy_to_file_name(source_file, &settings.output_folder);
         // println!();
     }
+}
+
+fn copy_to_file_name(original_file: &str, output_folder: &str) {
+    fs::copy(
+        original_file,
+        format!(
+            "{}/{}",
+            output_folder,
+            Path::new(&original_file)
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+        ),
+    )
+    .unwrap();
 }
