@@ -6,6 +6,7 @@ use std::{fs, process};
 
 use bk_tree::BKTree;
 use config::Config;
+use image::{DynamicImage, GenericImage, GenericImageView};
 use image_hasher::{HashAlg, HasherConfig};
 use rayon::prelude::*;
 use walkdir::WalkDir;
@@ -295,13 +296,34 @@ fn main() {
     });
 }
 
+fn remove_alpha_channel(dynamic_image: &mut DynamicImage) {
+    let height = dynamic_image.height();
+    let width = dynamic_image.width();
+    for y in 0..height {
+        for x in 0..width {
+            let mut px = dynamic_image.get_pixel(x, y);
+            // TODO current solution not works for fully transparent SVG
+            // Looks that different tools differently recognizes alpha, so for now
+            // Everything that contains alpha is changed to totally white pixel, which should help
+            // To remove a lot of false positives(I expect very few false negatives)
+            if px.0[3] != 255 {
+                px.0[0] = 255;
+                px.0[1] = 255;
+                px.0[2] = 255;
+                px.0[3] = 255;
+                dynamic_image.put_pixel(x, y, px);
+            }
+        }
+    }
+}
+
 fn compare_images(
     source_file: &str,
     first_output_png: &str,
     other_output_png: &str,
     settings: &Settings,
 ) {
-    let first_image = match image::open(first_output_png) {
+    let mut first_image = match image::open(first_output_png) {
         Ok(t) => t,
         Err(e) => {
             save_problematic_file(
@@ -313,7 +335,7 @@ fn compare_images(
             return;
         }
     };
-    let second_image = match image::open(other_output_png) {
+    let mut second_image = match image::open(other_output_png) {
         Ok(t) => t,
         Err(e) => {
             save_problematic_file(
@@ -350,8 +372,12 @@ fn compare_images(
         return;
     }
 
+    // Hash algorithms works bad with images with alpha channel
+    remove_alpha_channel(&mut first_image);
+    remove_alpha_channel(&mut second_image);
+
     let hasher = HasherConfig::new()
-        .hash_alg(HashAlg::Blockhash) // Looks that this is quite good hash algorithm for images with alpha, other not works well
+        .hash_alg(HashAlg::DoubleGradient)
         .hash_size(16, 16)
         .to_hasher();
 
