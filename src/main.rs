@@ -33,6 +33,7 @@ struct Settings {
     remove_files_from_output_folder_at_start: bool,
     ignore_similarity_checking_step: bool,
     debug_show_always_output: bool,
+    test_version: bool,
 
     first_tool_path: String,
     first_tool_png_name_ending: String,
@@ -74,6 +75,7 @@ fn load_settings() -> Settings {
         ignore_similarity_checking_step: general_settings["ignore_similarity_checking_step"]
             .parse()
             .unwrap(),
+        test_version: general_settings["test_version"].parse().unwrap(),
         first_tool_path: first_tool_settings["path"].clone(),
         first_tool_png_name_ending: first_tool_settings["png_name_ending"].clone(),
         first_tool_arguments: first_tool_settings["arguments"].clone(),
@@ -144,8 +146,23 @@ fn generate_command_from_items(
     comm
 }
 
+fn test_version(app_name: &str) {
+    Command::new(app_name)
+        .stderr(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap_or_else(|_| panic!("Failed to check version of {app_name} via `{app_name} --version`, probably this is not valid path to file, if is proper and app not supports --version argument, just disable this check"))
+        .wait_with_output()
+        .unwrap_or_else(|_| panic!("Failed to wait into --version command"));
+}
+
 fn main() {
     let settings = load_settings();
+    if settings.test_version {
+        test_version(&settings.first_tool_path);
+        test_version(&settings.other_tool_path);
+    }
+
     let mut files_to_check = find_files(&settings);
     if settings.limit_files != 0 {
         files_to_check = files_to_check[..settings.limit_files].to_vec();

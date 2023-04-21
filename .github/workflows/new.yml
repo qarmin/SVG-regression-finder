@@ -33,18 +33,18 @@ jobs:
           cd thorvg
           meson . build -Dtools=svg2png
           sudo ninja -C build install
-          cp build/src/bin/svg2png/svg2png ..
           cd ..
       - name: Build
         run: cargo build --release
-      - name: Run tests
+      - name: Prepare tests
         run: |
           wget https://github.com/qarmin/SVG-regression-finder/releases/download/0.1.0/SVGBigPack.zip
           unzip SVGBigPack.zip
           mv ci_settings.toml settings.toml
           mkdir BrokenSVG
+      - name: Run tests
+        run: |
           target/release/svg_tester
-
       - name: Store Broken Images
         uses: actions/upload-artifact@v3
         with:
