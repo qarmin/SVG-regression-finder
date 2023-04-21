@@ -273,7 +273,7 @@ fn main() {
 
                 if let Ok(message) = err_message {
                     if !message.is_empty() {
-                        save_problematic_file(&settings.problematic_files_path,tool_name,source_file);
+                        save_problematic_file(&settings.problematic_files_path, tool_name, source_file);
                         println!(
                             "\n\n{} {} -\ncommand {:?} {:?}",
                             message,
@@ -294,19 +294,20 @@ fn main() {
             }
         }
         // This allows to run problematic files on both first and second tool, to check if file is really broken
-        if need_to_return{
+        if need_to_return {
             return;
         }
         if !settings.ignore_similarity_checking_step {
             compare_images(source_file, &first_output_png, &other_output_png, &settings, &broken_items);
         }
     });
+
+    eprintln!(
+        "Found {} broken/problematic files",
+        broken_items.load(Ordering::Relaxed)
+    );
     if broken_items.load(Ordering::Relaxed) > 0 && settings.return_error_when_finding_invalid_files
     {
-        eprintln!(
-            "Found {} broken files, according to settings returning 1 status.",
-            broken_items.load(Ordering::Relaxed)
-        );
         process::exit(1);
     }
 }

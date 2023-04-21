@@ -1,5 +1,5 @@
 [general]
-folder_with_files_to_check = "/home/rafal/Desktop/SVG/SS/"
+folder_with_files_to_check = "/home/rafal/Desktop/SVG/SVG2BigPack/"
 problematic_files_path = "/home/rafal/Desktop/SVG/ProblematicSVG/" # Where to store problematic files, in which conversion failed(e.g. due program crash)
 timeout = 0 # TODO not working yet, use bigger value than 0 to enable timeout functionality, time in seconds
 px_size_of_generated_file = 400
