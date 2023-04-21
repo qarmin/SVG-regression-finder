@@ -864,6 +864,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe895eb47f22e2ddd4dabc02bce419d2e643c8e3b585c78158b349195bc24d82"
 
 [[package]]
+name = "svg_tester"
+version = "0.1.0"
+dependencies = [
+ "bk-tree",
+ "config",
+ "hamming",
+ "image",
+ "image_hasher",
+ "rayon",
+ "walkdir",
+]
+
+[[package]]
 name = "syn"
 version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -903,19 +916,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.15",
-]
-
-[[package]]
-name = "thorvg_tester"
-version = "0.1.0"
-dependencies = [
- "bk-tree",
- "config",
- "hamming",
- "image",
- "image_hasher",
- "rayon",
- "walkdir",
 ]
 
 [[package]]

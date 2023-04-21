@@ -1,5 +1,5 @@
 [package]
-name = "thorvg_tester"
+name = "svg_tester"
 version = "0.1.0"
 edition = "2021"
 authors = ["Rafał Mikrut"]
