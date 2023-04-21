@@ -12,7 +12,7 @@ debug_show_always_output = true # Allows to find broken files
 
 [first_tool]
 name = "ThorVG"
-path = "/home/rafal/test/thorvg/build/src/bin/svg2png/svg2png"
+path = "svg2png"
 png_name_ending = "_thorvg.png"
 arguments = "{FILE} -r {SIZE}x{SIZE}"
 
