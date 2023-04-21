@@ -9,6 +9,7 @@ output_folder = "BrokenSVG" # Place where to save files(Input and output that sh
 limit_files = 0 # Limit checked files, useful if you are just checking this, 0 will remove limit of checked files
 remove_files_from_output_folder_at_start = true # Useful if you run app with different settings and you don't want to remove files one by one
 debug_show_always_output = true # Allows to find broken files
+test_version = true # Tests `app --version`, this allows to earlier find but with problematic files instead in runtime, when checking files
 
 [first_tool]
 name = "ThorVG"
