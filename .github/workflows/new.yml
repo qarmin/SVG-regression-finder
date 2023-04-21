@@ -24,7 +24,17 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install things
-        run: sudo apt install -y wget2 librsvg2-dev librsvg2-bin
+        run: |
+          sudo apt install -y wget2 librsvg2-dev librsvg2-bin ninja-build git gcc-multilib g++-multilib
+          sudo pip3 install meson
+      - name: Compile Thorvg
+        run: |
+          git clone https://github.com/thorvg/thorvg.git
+          cd thorvg
+          meson -Dtools=svg2png
+          sudo ninja -C build install
+          cp build/src/bin/svg2png/svg2png ..
+          cd ..
       - name: Build
         run: cargo build --release
       - name: Run tests
@@ -33,3 +43,10 @@ jobs:
           unzip SVGBigPack.zip
           mv ci_settings.toml settings.toml
           mkdir BrokenSVG
+          target/release/svg_tester
+
+      - name: Store Broken Images
+        uses: actions/upload-artifact@v3
+        with:
+          name: broken-images
+          path: BrokenSVG
