@@ -23,5 +23,15 @@ Example differences that found this tool(in Japanese flag look at shadows inside
 
 ![Screenshot from 2022-08-26 16-25-58](https://user-images.githubusercontent.com/41945903/186930569-0c46657c-9054-42e0-9eb4-a539b6eccbe4.png)
 
+## Results
+After running app in produced folders will be produced two types of files
+- Broken files - packs of 3 files - one svg and two png files to be able to compare visually difference between results
+- Problematic files - list of files that caused problems during conversion from svg to png. Exact reason why this file was flagged should be printed in logs
+
+## CI
+App is really great to put it to CI, just prepare tools and sample svg files and you are ready to go.
+
+Here - https://github.com/qarmin/SVG-regression-finder/actions - you can see CI that returns files that differs between provided two tools and also problematic files are returned. 
+
 ## Limitations
 Tool not works with non-identical images in size(cannot compare portrait image with horizontal)
