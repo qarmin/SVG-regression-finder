@@ -34,11 +34,14 @@ struct Settings {
     ignore_similarity_checking_step: bool,
     debug_show_always_output: bool,
     test_version: bool,
-
+    problematic_files_path: String,
+    // TODO timeout: u32,
+    first_tool_name: String,
     first_tool_path: String,
     first_tool_png_name_ending: String,
     first_tool_arguments: String,
 
+    other_tool_name: String,
     other_tool_path: String,
     other_tool_png_name_ending: String,
     other_tool_arguments: String,
@@ -75,10 +78,14 @@ fn load_settings() -> Settings {
         ignore_similarity_checking_step: general_settings["ignore_similarity_checking_step"]
             .parse()
             .unwrap(),
+        problematic_files_path: general_settings["problematic_files_path"].clone(),
+        //timeout: general_settings["timeout"].parse().unwrap(),
         test_version: general_settings["test_version"].parse().unwrap(),
+        first_tool_name: first_tool_settings["name"].clone(),
         first_tool_path: first_tool_settings["path"].clone(),
         first_tool_png_name_ending: first_tool_settings["png_name_ending"].clone(),
         first_tool_arguments: first_tool_settings["arguments"].clone(),
+        other_tool_name: other_tool_settings["name"].clone(),
         other_tool_path: other_tool_settings["path"].clone(),
         other_tool_png_name_ending: other_tool_settings["png_name_ending"].clone(),
         other_tool_arguments: other_tool_settings["arguments"].clone(),
@@ -90,6 +97,7 @@ fn load_settings() -> Settings {
 
 fn find_files(settings: &Settings) -> Vec<String> {
     let mut files_to_check = Vec::new();
+    println!("Starting to collect files to check");
     if Path::new(&settings.folder_with_files_to_check).is_dir() {
         for entry in WalkDir::new(&settings.folder_with_files_to_check)
             .max_depth(1)
@@ -125,6 +133,7 @@ fn find_files(settings: &Settings) -> Vec<String> {
             }
         };
     }
+    println!("Collected {} files to check", files_to_check.len());
     files_to_check
 }
 
@@ -156,13 +165,26 @@ fn test_version(app_name: &str) {
         .unwrap_or_else(|_| panic!("Failed to wait into --version command"));
 }
 
+fn save_problematic_file(problematic_files_path: &str, svg_tool_name: &str, broken_svg_path: &str) {
+    let file_name = Path::new(broken_svg_path)
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string();
+    let new_path = format!("{problematic_files_path}/{svg_tool_name}");
+    let new_file_path = format!("{new_path}/{file_name}");
+
+    let _ = fs::create_dir_all(&new_path);
+    fs::copy(broken_svg_path, new_file_path).unwrap();
+}
+
 fn main() {
     let settings = load_settings();
     if settings.test_version {
         test_version(&settings.first_tool_path);
         test_version(&settings.other_tool_path);
     }
-
     let mut files_to_check = find_files(&settings);
     if settings.limit_files != 0 {
         files_to_check = files_to_check[..settings.limit_files].to_vec();
@@ -172,6 +194,7 @@ fn main() {
     // Remove output files if exists
     if settings.remove_files_from_output_folder_at_start {
         let _ = fs::remove_dir_all(&settings.output_folder);
+        let _ = fs::remove_dir_all(&settings.problematic_files_path);
     }
     let _ = fs::create_dir_all(&settings.output_folder);
 
@@ -212,9 +235,11 @@ fn main() {
             settings.px_size_of_generated_file,
         );
 
-        for (mut command, output_png) in [
-            (first_command, &first_output_png),
-            (other_command, &other_output_png),
+
+        let mut need_to_return = false;
+        for (mut command, output_png, tool_name) in [
+            (first_command, &first_output_png, &settings.first_tool_name),
+            (other_command, &other_output_png, &settings.other_tool_name),
         ] {
             if !settings.ignore_conversion_step {
                 // Run command
@@ -236,11 +261,12 @@ fn main() {
                 let normal_message = String::from_utf8(output.stdout);
 
                 if settings.debug_show_always_output {
-                    println!("{source_file}\nERR: {err_message:?}\nOUT: {normal_message:?}\nSTATUS: {}\n", output.status)
+                    println!("{source_file}\nERR: {err_message:?}\nOUT: {normal_message:?}\nSTATUS: {}\n", output.status);
                 }
 
                 if let Ok(message) = err_message {
                     if !message.is_empty() {
+                        save_problematic_file(&settings.problematic_files_path,tool_name,source_file);
                         println!(
                             "\n\n{} {} -\ncommand {:?} {:?}",
                             message,
@@ -249,7 +275,7 @@ fn main() {
                             command.get_args()
                         );
                         println!("{source_file}");
-                        return;
+                        need_to_return = true;
                     }
                 }
                 if let Ok(message) = normal_message {
@@ -258,6 +284,10 @@ fn main() {
                     }
                 }
             }
+        }
+        // This allows to run problematic files on both first and second tool, to check if file is really broken
+        if need_to_return{
+            return;
         }
         if !settings.ignore_similarity_checking_step {
             compare_images(source_file, &first_output_png, &other_output_png, &settings);
@@ -274,6 +304,11 @@ fn compare_images(
     let first_image = match image::open(first_output_png) {
         Ok(t) => t,
         Err(e) => {
+            save_problematic_file(
+                &settings.problematic_files_path,
+                &settings.first_tool_name,
+                source_file,
+            );
             println!("Failed to open {first_output_png}, reason {e}");
             return;
         }
@@ -281,6 +316,11 @@ fn compare_images(
     let second_image = match image::open(other_output_png) {
         Ok(t) => t,
         Err(e) => {
+            save_problematic_file(
+                &settings.problematic_files_path,
+                &settings.other_tool_name,
+                source_file,
+            );
             println!("Failed to open {other_output_png}, reason {e}");
             return;
         }
@@ -288,6 +328,16 @@ fn compare_images(
 
     if second_image.width() != first_image.width() || second_image.height() != first_image.height()
     {
+        save_problematic_file(
+            &settings.problematic_files_path,
+            &settings.first_tool_name,
+            source_file,
+        );
+        save_problematic_file(
+            &settings.problematic_files_path,
+            &settings.other_tool_name,
+            source_file,
+        );
         println!(
             "Ignored images with non equal lengths {} {}x{}, {} {}x{}",
             other_output_png,
