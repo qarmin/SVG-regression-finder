@@ -12,6 +12,7 @@ limit_files = 0 # Limit checked files, useful if you are just checking this, 0 w
 remove_files_from_output_folder_at_start = true # Useful if you run app with different settings and you don't want to remove files one by one
 debug_show_always_output = false # Allows to find broken files
 test_version = false # Tests `app --version`, this allows to earlier find but with problematic files instead in runtime, when checking files
+return_error_when_finding_invalid_files = false # When finding invalid files(broken or problematic) app will close with status 1
 
 [first_tool]
 name = "thorvg"

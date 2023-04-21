@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 use std::process::{Command, Stdio};
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::atomic::{AtomicI32, AtomicU32, Ordering};
 use std::{fs, process};
 
 use bk_tree::BKTree;
@@ -36,6 +36,7 @@ struct Settings {
     debug_show_always_output: bool,
     test_version: bool,
     problematic_files_path: String,
+    return_error_when_finding_invalid_files: bool,
     // TODO timeout: u32,
     first_tool_name: String,
     first_tool_path: String,
@@ -77,6 +78,10 @@ fn load_settings() -> Settings {
             .parse()
             .unwrap(),
         ignore_similarity_checking_step: general_settings["ignore_similarity_checking_step"]
+            .parse()
+            .unwrap(),
+        return_error_when_finding_invalid_files: general_settings
+            ["return_error_when_finding_invalid_files"]
             .parse()
             .unwrap(),
         problematic_files_path: general_settings["problematic_files_path"].clone(),
@@ -192,6 +197,7 @@ fn main() {
     }
 
     let atomic: AtomicI32 = AtomicI32::new(0);
+    let broken_items: AtomicU32 = AtomicU32::new(0);
     // Remove output files if exists
     if settings.remove_files_from_output_folder_at_start {
         let _ = fs::remove_dir_all(&settings.output_folder);
@@ -276,6 +282,7 @@ fn main() {
                             command.get_args()
                         );
                         println!("{source_file}");
+                        broken_items.fetch_add(1, Ordering::Relaxed);
                         need_to_return = true;
                     }
                 }
@@ -291,9 +298,17 @@ fn main() {
             return;
         }
         if !settings.ignore_similarity_checking_step {
-            compare_images(source_file, &first_output_png, &other_output_png, &settings);
+            compare_images(source_file, &first_output_png, &other_output_png, &settings, &broken_items);
         }
     });
+    if broken_items.load(Ordering::Relaxed) > 0 && settings.return_error_when_finding_invalid_files
+    {
+        eprintln!(
+            "Found {} broken files, according to settings returning 1 status.",
+            broken_items.load(Ordering::Relaxed)
+        );
+        process::exit(1);
+    }
 }
 
 fn remove_alpha_channel(dynamic_image: &mut DynamicImage) {
@@ -322,6 +337,7 @@ fn compare_images(
     first_output_png: &str,
     other_output_png: &str,
     settings: &Settings,
+    broken_items: &AtomicU32,
 ) {
     let mut first_image = match image::open(first_output_png) {
         Ok(t) => t,
@@ -332,6 +348,7 @@ fn compare_images(
                 source_file,
             );
             println!("Failed to open {first_output_png}, reason {e}");
+            broken_items.fetch_add(1, Ordering::Relaxed);
             return;
         }
     };
@@ -344,6 +361,7 @@ fn compare_images(
                 source_file,
             );
             println!("Failed to open {other_output_png}, reason {e}");
+            broken_items.fetch_add(1, Ordering::Relaxed);
             return;
         }
     };
@@ -369,6 +387,7 @@ fn compare_images(
             first_image.width(),
             first_image.height()
         );
+        broken_items.fetch_add(1, Ordering::Relaxed);
         return;
     }
 
@@ -407,6 +426,7 @@ fn compare_images(
         copy_to_file_name(first_output_png, &settings.output_folder);
         copy_to_file_name(other_output_png, &settings.output_folder);
         copy_to_file_name(source_file, &settings.output_folder);
+        broken_items.fetch_add(1, Ordering::Relaxed);
         // println!();
     }
 }

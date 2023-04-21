@@ -4,7 +4,7 @@ This repository contains tool to automatically find if ThorVG, Rsvg, Inkscape or
 It can be used to check visually differences between two versions of same software.
 
 ## How it works
-By default, Rsvg and ThorVG produce png files from svg ones.  
+In settings file, your two tools needs to be selected(in example file this is thorvg, rsvg, inkscape and resvg) - tool recognizes differences between two svg files, but it not shows which output is good/better.  
 Next this two files are compared with each other, and if are similar, then nothing happens, but if are different, then names of this files are printed to output.  
 Most of files differs on shadow size and other very small visible elements, so it is possible to set similarity level, which should part of such files ignore.
 
