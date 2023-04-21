@@ -40,5 +40,5 @@ jobs:
       - name: Store Linux
         uses: actions/upload-artifact@v2
         with:
-          name: thorvg_tester-${{ runner.os }}-${{ matrix.toolchain }}
-          path: target/release/thorvg_tester
+          name: svg_tester-${{ runner.os }}-${{ matrix.toolchain }}
+          path: target/release/svg_tester

@@ -1,0 +1,35 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --verbose
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install things
+        run: sudo apt install -y wget2 librsvg2-dev librsvg2-bin
+      - name: Build
+        run: cargo build --release
+      - name: Run tests
+        run: |
+          wget https://github.com/qarmin/SVG-regression-finder/releases/download/0.1.0/SVGBigPack.zip
+          unzip SVGBigPack.zip
+          mv ci_settings.toml settings.toml
+          mkdir BrokenSVG
