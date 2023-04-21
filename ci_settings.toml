@@ -1,14 +1,14 @@
 [general]
-folder_with_files_to_check = "SVGBigPack"
+folder_with_files_to_check = "SVG2BigPack"
 px_size_of_generated_file = 400
 ignore_conversion_step = false # Ignore step with conversion files from svg to png, just compare files
 ignore_similarity_checking_step = false # Useful to finding problems with generating files
 ignore_thorvg_not_supported_items = true # Thorvg not supports files with text, filters
-similarity = 40 # Bigger similiarity will show only broken files that are completelly different, looks that 0-100
+similarity = 50 # Bigger similiarity will show only broken files that are completelly different, looks that 0-100 is quite reasonable range
 output_folder = "BrokenSVG" # Place where to save files(Input and output that show differences)
 limit_files = 0 # Limit checked files, useful if you are just checking this, 0 will remove limit of checked files
 remove_files_from_output_folder_at_start = true # Useful if you run app with different settings and you don't want to remove files one by one
-debug_show_always_output = true # Allows to find broken files
+debug_show_always_output = false # Allows to find broken files
 test_version = true # Tests `app --version`, this allows to earlier find but with problematic files instead in runtime, when checking files
 
 [first_tool]

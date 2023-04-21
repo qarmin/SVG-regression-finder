@@ -1,4 +1,5 @@
-name: 🐧 Linux
+name: Rust
+
 on:
   push:
   pull_request:
@@ -9,36 +10,48 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  linux-default:
-    strategy:
-      matrix:
-        toolchain: [ stable ]
-        type: [ release ]
-    runs-on: ubuntu-20.04
+  build:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.toolchain }}
-          override: true
-
-      - uses: actions/cache@v2
-        with:
-          path: |
-            target
-          key: linux-default-${{github.ref}}-${{github.sha}}
-          restore-keys: |
-            linux-default-${{github.ref}}-${{github.sha}}
-
-      - name: Build Release
-        run: cargo build --release
-        env:
-          CARGO_INCREMENTAL: 0
-          RUSTFLAGS: "-C debuginfo=0"
-
+      - uses: actions/checkout@v3
+      - name: Build
+        run: cargo build --release --verbose
+      - name: Run tests
+        run: cargo test --verbose
       - name: Store Linux
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: svg_tester-${{ runner.os }}-${{ matrix.toolchain }}
+          name: svg_tester
           path: target/release/svg_tester
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install things
+        run: |
+          sudo apt install -y wget2 librsvg2-dev librsvg2-bin ninja-build git gcc-multilib g++-multilib
+          sudo pip3 install meson
+      - name: Compile Thorvg
+        run: |
+          git clone https://github.com/thorvg/thorvg.git
+          cd thorvg
+          meson . build -Dtools=svg2png
+          sudo ninja -C build install
+          cd ..
+      - name: Build
+        run: cargo build --release
+      - name: Prepare tests
+        run: |
+          wget https://github.com/qarmin/SVG-regression-finder/releases/download/0.1.0/SVG2BigPack.zip
+          unzip SVG2BigPack.zip
+          mv ci_settings.toml settings.toml
+          mkdir BrokenSVG
+      - name: Run tests
+        run: |
+          target/release/svg_tester
+      - name: Store Broken Images
+        uses: actions/upload-artifact@v3
+        with:
+          name: broken-images
+          path: BrokenSVG
