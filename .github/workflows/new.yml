@@ -31,7 +31,7 @@ jobs:
         run: |
           git clone https://github.com/thorvg/thorvg.git
           cd thorvg
-          meson -Dtools=svg2png
+          meson . build -Dtools=svg2png
           sudo ninja -C build install
           cp build/src/bin/svg2png/svg2png ..
           cd ..
