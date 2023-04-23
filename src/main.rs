@@ -198,6 +198,7 @@ fn main() {
 
     let atomic: AtomicI32 = AtomicI32::new(0);
     let broken_items: AtomicU32 = AtomicU32::new(0);
+    let problematic_items: AtomicU32 = AtomicU32::new(0);
     // Remove output files if exists
     if settings.remove_files_from_output_folder_at_start {
         let _ = fs::remove_dir_all(&settings.output_folder);
@@ -282,7 +283,7 @@ fn main() {
                             command.get_args()
                         );
                         println!("{source_file}");
-                        broken_items.fetch_add(1, Ordering::Relaxed);
+                        problematic_items.fetch_add(1, Ordering::Relaxed);
                         need_to_return = true;
                     }
                 }
@@ -298,17 +299,19 @@ fn main() {
             return;
         }
         if !settings.ignore_similarity_checking_step {
-            compare_images(source_file, &first_output_png, &other_output_png, &settings, &broken_items);
+            compare_images(source_file, &first_output_png, &other_output_png, &settings, &broken_items, &problematic_items);
         }
     });
 
-    eprintln!(
-        "Found {} broken/problematic files",
-        broken_items.load(Ordering::Relaxed)
-    );
-    if broken_items.load(Ordering::Relaxed) > 0 && settings.return_error_when_finding_invalid_files
-    {
-        process::exit(1);
+    if broken_items.load(Ordering::Relaxed) > 0 || problematic_items.load(Ordering::Relaxed) > 0 {
+        eprintln!(
+            "Regression results: Found {} files that looks different and {} files that cannot be tested",
+            broken_items.load(Ordering::Relaxed),
+            problematic_items.load(Ordering::Relaxed)
+        );
+        if settings.return_error_when_finding_invalid_files {
+            process::exit(1);
+        }
     }
 }
 
@@ -339,6 +342,7 @@ fn compare_images(
     other_output_png: &str,
     settings: &Settings,
     broken_items: &AtomicU32,
+    problematic_items: &AtomicU32,
 ) {
     let mut first_image = match image::open(first_output_png) {
         Ok(t) => t,
@@ -349,7 +353,7 @@ fn compare_images(
                 source_file,
             );
             println!("Failed to open {first_output_png}, reason {e}");
-            broken_items.fetch_add(1, Ordering::Relaxed);
+            problematic_items.fetch_add(1, Ordering::Relaxed);
             return;
         }
     };
@@ -362,7 +366,7 @@ fn compare_images(
                 source_file,
             );
             println!("Failed to open {other_output_png}, reason {e}");
-            broken_items.fetch_add(1, Ordering::Relaxed);
+            problematic_items.fetch_add(1, Ordering::Relaxed);
             return;
         }
     };
@@ -388,7 +392,7 @@ fn compare_images(
             first_image.width(),
             first_image.height()
         );
-        broken_items.fetch_add(1, Ordering::Relaxed);
+        problematic_items.fetch_add(1, Ordering::Relaxed);
         return;
     }
 
