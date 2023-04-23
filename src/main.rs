@@ -312,6 +312,8 @@ fn main() {
         if settings.return_error_when_finding_invalid_files {
             process::exit(1);
         }
+    } else {
+        println!("Not found any problematic files");
     }
 }
 
