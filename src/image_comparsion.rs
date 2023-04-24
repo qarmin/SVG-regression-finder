@@ -44,10 +44,7 @@ pub fn compare_images(
         Ok(t) => t,
         Err(e) => {
             save_problematic_file(
-                &settings.problematic_files_path,
-                &settings.first_tool_name,
-                source_file,
-                settings.remove_problematic_files_after_copying,
+                &settings.problematic_files_path, &settings.first_tool_name, source_file, settings.remove_problematic_files_after_copying,
             );
             println!("Failed to open {first_output_png}, reason {e}");
             problematic_items.fetch_add(1, Ordering::Relaxed);
@@ -58,10 +55,7 @@ pub fn compare_images(
         Ok(t) => t,
         Err(e) => {
             save_problematic_file(
-                &settings.problematic_files_path,
-                &settings.other_tool_name,
-                source_file,
-                settings.remove_problematic_files_after_copying,
+                &settings.problematic_files_path, &settings.other_tool_name, source_file, settings.remove_problematic_files_after_copying,
             );
             println!("Failed to open {other_output_png}, reason {e}");
             problematic_items.fetch_add(1, Ordering::Relaxed);
@@ -69,19 +63,12 @@ pub fn compare_images(
         }
     };
 
-    if second_image.width() != first_image.width() || second_image.height() != first_image.height()
-    {
+    if second_image.width() != first_image.width() || second_image.height() != first_image.height() {
         save_problematic_file(
-            &settings.problematic_files_path,
-            &settings.first_tool_name,
-            source_file,
-            settings.remove_problematic_files_after_copying,
+            &settings.problematic_files_path, &settings.first_tool_name, source_file, settings.remove_problematic_files_after_copying,
         );
         save_problematic_file(
-            &settings.problematic_files_path,
-            &settings.other_tool_name,
-            source_file,
-            settings.remove_problematic_files_after_copying,
+            &settings.problematic_files_path, &settings.other_tool_name, source_file, settings.remove_problematic_files_after_copying,
         );
         println!(
             "Ignored images with non equal lengths {} {}x{}, {} {}x{}",
@@ -100,10 +87,7 @@ pub fn compare_images(
     remove_alpha_channel(&mut first_image);
     remove_alpha_channel(&mut second_image);
 
-    let hasher = HasherConfig::new()
-        .hash_alg(HashAlg::DoubleGradient)
-        .hash_size(16, 16)
-        .to_hasher();
+    let hasher = HasherConfig::new().hash_alg(HashAlg::DoubleGradient).hash_size(16, 16).to_hasher();
 
     let second_image_hash = hasher.hash_image(&second_image).as_bytes().to_vec();
     let first_image_hash = hasher.hash_image(&first_image).as_bytes().to_vec();
@@ -129,15 +113,7 @@ pub fn compare_images(
 pub fn copy_to_file_name(original_file: &str, output_folder: &str) {
     fs::copy(
         original_file,
-        format!(
-            "{}/{}",
-            output_folder,
-            Path::new(&original_file)
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap()
-        ),
+        format!("{}/{}", output_folder, Path::new(&original_file).file_name().unwrap().to_str().unwrap()),
     )
     .unwrap();
 }

@@ -19,18 +19,10 @@ pub fn convert_svg_to_png(
     let possible_output_png_original = source_file.replace(".svg", ".png"); // Usually png files just are created automatically by changing extensions
 
     let first_command = generate_command_from_items(
-        &settings.first_tool_path,
-        &settings.first_tool_arguments,
-        source_file,
-        &possible_output_png_original,
-        settings.px_size_of_generated_file,
+        &settings.first_tool_path, &settings.first_tool_arguments, source_file, &possible_output_png_original, settings.px_size_of_generated_file,
     );
     let other_command = generate_command_from_items(
-        &settings.other_tool_path,
-        &settings.other_tool_arguments,
-        source_file,
-        &possible_output_png_original,
-        settings.px_size_of_generated_file,
+        &settings.other_tool_path, &settings.other_tool_arguments, source_file, &possible_output_png_original, settings.px_size_of_generated_file,
     );
 
     for (mut command, output_png, tool_name) in [
@@ -48,11 +40,9 @@ pub fn convert_svg_to_png(
 
         // If converted png file have same name as svg, rename it to required name
         if Path::new(&possible_output_png_original).is_file() {
-            fs::copy(&possible_output_png_original, output_png).unwrap_or_else(|_| {
-                panic!("Failed to copy file {possible_output_png_original} to {output_png}")
-            });
-            fs::remove_file(&possible_output_png_original)
-                .unwrap_or_else(|_| panic!("Failed to remove file {possible_output_png_original}"));
+            fs::copy(&possible_output_png_original, output_png)
+                .unwrap_or_else(|_| panic!("Failed to copy file {possible_output_png_original} to {output_png}"));
+            fs::remove_file(&possible_output_png_original).unwrap_or_else(|_| panic!("Failed to remove file {possible_output_png_original}"));
         }
 
         let err_message = String::from_utf8(output.stderr);
@@ -68,10 +58,7 @@ pub fn convert_svg_to_png(
         if let Ok(message) = err_message {
             if !message.is_empty() {
                 save_problematic_file(
-                    &settings.problematic_files_path,
-                    tool_name,
-                    source_file,
-                    settings.remove_problematic_files_after_copying,
+                    &settings.problematic_files_path, tool_name, source_file, settings.remove_problematic_files_after_copying,
                 );
                 println!(
                     "\n\n{} {} -\ncommand {:?} {:?}",
@@ -94,20 +81,15 @@ pub fn convert_svg_to_png(
     valid_conversion
 }
 
-fn generate_command_from_items(
-    name: &str,
-    arguments: &str,
-    source_file: &str,
-    output_file: &str,
-    px_size_of_generated_file: u32,
-) -> Command {
+fn generate_command_from_items(name: &str, arguments: &str, source_file: &str, output_file: &str, px_size_of_generated_file: u32) -> Command {
     let new_arguments = arguments.replace("{SIZE}", &px_size_of_generated_file.to_string());
     let mut comm = Command::new(name);
     // FILE must be renamed after splitting arguments by space, because source_file may contain spaces
     // and broke file
-    comm.args(new_arguments.split(' ').map(|e| {
-        e.replace("{FILE}", source_file)
-            .replace("{OUTPUT_FILE}", output_file)
-    }));
+    comm.args(
+        new_arguments
+            .split(' ')
+            .map(|e| e.replace("{FILE}", source_file).replace("{OUTPUT_FILE}", output_file)),
+    );
     comm
 }

@@ -32,11 +32,7 @@ fn find_files(settings: &Settings) -> Vec<String> {
     let mut files_to_check = Vec::new();
     println!("Starting to collect files to check");
     if Path::new(&settings.folder_with_files_to_check).is_dir() {
-        for entry in WalkDir::new(&settings.folder_with_files_to_check)
-            .max_depth(1)
-            .into_iter()
-            .flatten()
-        {
+        for entry in WalkDir::new(&settings.folder_with_files_to_check).max_depth(1).into_iter().flatten() {
             let path = entry.path();
             if !path.is_file() {
                 continue;
@@ -51,17 +47,9 @@ fn find_files(settings: &Settings) -> Vec<String> {
         }
     } else {
         files_to_check = match fs::read_to_string(&settings.folder_with_files_to_check) {
-            Ok(t) => t
-                .split('\n')
-                .map(str::trim)
-                .map(str::to_string)
-                .filter(|e| e.ends_with(".svg"))
-                .collect(),
+            Ok(t) => t.split('\n').map(str::trim).map(str::to_string).filter(|e| e.ends_with(".svg")).collect(),
             Err(e) => {
-                println!(
-                    "Failed to open file {}, reason {}",
-                    settings.folder_with_files_to_check, e
-                );
+                println!("Failed to open file {}, reason {}", settings.folder_with_files_to_check, e);
                 process::exit(1);
             }
         };
@@ -108,26 +96,13 @@ fn main() {
         let first_output_png = source_file.replace(".svg", &settings.first_tool_png_name_ending);
         let other_output_png = source_file.replace(".svg", &settings.other_tool_png_name_ending);
 
-        if !settings.ignore_conversion_step
-            && !convert_svg_to_png(
-                &settings,
-                source_file,
-                &first_output_png,
-                &other_output_png,
-                &problematic_items,
-            )
-        {
+        if !settings.ignore_conversion_step && !convert_svg_to_png(&settings, source_file, &first_output_png, &other_output_png, &problematic_items) {
             return;
         }
 
         if !settings.ignore_similarity_checking_step {
             compare_images(
-                source_file,
-                &first_output_png,
-                &other_output_png,
-                &settings,
-                &broken_items,
-                &problematic_items,
+                source_file, &first_output_png, &other_output_png, &settings, &broken_items, &problematic_items,
             );
         }
     });
