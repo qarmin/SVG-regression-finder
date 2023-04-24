@@ -1,15 +1,14 @@
-use std::path::Path;
-
 use std::fs;
+use std::path::Path;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use crate::common::save_problematic_file;
-use crate::Hamming;
 use bk_tree::BKTree;
 use image::{DynamicImage, GenericImage, GenericImageView};
 use image_hasher::{HashAlg, HasherConfig};
 
+use crate::common::save_problematic_file;
 use crate::setting::Settings;
+use crate::Hamming;
 
 pub fn remove_alpha_channel(dynamic_image: &mut DynamicImage) {
     let height = dynamic_image.height();

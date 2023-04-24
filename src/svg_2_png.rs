@@ -4,7 +4,6 @@ use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::common::save_problematic_file;
-
 use crate::setting::Settings;
 
 pub fn convert_svg_to_png(
