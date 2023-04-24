@@ -1,13 +1,13 @@
-use std::path::Path;
+#![allow(clippy::similar_names)]
 
+use std::path::Path;
 use std::sync::atomic::{AtomicI32, AtomicU32, Ordering};
 use std::{fs, process};
-
-use crate::image_comparsion::compare_images;
 
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
+use crate::image_comparsion::compare_images;
 use crate::setting::{load_settings, Settings};
 use crate::svg_2_png::convert_svg_to_png;
 
@@ -107,6 +107,8 @@ fn main() {
         }
     });
 
+    remove_output_png_files(&settings);
+
     if broken_items.load(Ordering::Relaxed) > 0 || problematic_items.load(Ordering::Relaxed) > 0 {
         eprintln!(
             "Regression results: Found {} files that looks different and {} files that cannot be tested",
@@ -118,5 +120,25 @@ fn main() {
         }
     } else {
         println!("Not found any problematic files");
+    }
+}
+
+fn remove_output_png_files(settings: &Settings) {
+    if !settings.remove_generated_png_files_at_end {
+        return;
+    }
+
+    for entry in WalkDir::new(&settings.output_folder).into_iter().flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let full_path = match path.canonicalize() {
+            Ok(t) => t.to_string_lossy().to_string(),
+            Err(_) => continue,
+        };
+        if full_path.ends_with(".png") {
+            let _ = fs::remove_file(full_path);
+        }
     }
 }

@@ -107,6 +107,9 @@ pub fn compare_images(
         copy_to_file_name(other_output_png, &settings.output_folder);
         copy_to_file_name(source_file, &settings.output_folder);
         broken_items.fetch_add(1, Ordering::Relaxed);
+        if settings.remove_broken_files_after_copying {
+            fs::remove_file(source_file).unwrap();
+        }
     }
 }
 
