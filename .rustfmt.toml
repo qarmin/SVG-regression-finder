@@ -1,0 +1,4 @@
+newline_style = "Unix"
+max_width = 150
+remove_nested_parens = true
+short_array_element_width_threshold=1000000
