@@ -61,6 +61,8 @@ fn find_files(settings: &Settings) -> Vec<String> {
 fn main() {
     let settings = load_settings();
     let mut files_to_check = find_files(&settings);
+    assert!(!files_to_check.is_empty());
+
     if settings.limit_files != 0 {
         files_to_check = files_to_check[..settings.limit_files].to_vec();
     }

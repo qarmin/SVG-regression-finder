@@ -57,7 +57,7 @@ jobs:
 
       - name: Run tests
         run: |
-          target/release/svg_tester # TODO remove this after adding new version
+          target/release/svg_tester
 
       - name: Store Broken Images
         uses: actions/upload-artifact@v3
@@ -94,11 +94,11 @@ jobs:
 
       - name: Prepare tests
         run: |
-          wget https://github.com/qarmin/SVG-regression-finder/releases/download/0.1.0/SVG2BigPack.zip
-          unzip SVG2BigPack.zip
+          wget https://github.com/qarmin/SVG-regression-finder/releases/download/0.2.0/SVG4BigPack.zip
+          unzip SVG4BigPack.zip
           mv ci_settings.toml settings.toml
           mkdir BrokenSVG
 
       - name: Run tests
         run: |
-          true || target/release/svg_tester # TODO remove this after adding new version
+          target/release/svg_tester
