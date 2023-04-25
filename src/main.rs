@@ -128,7 +128,7 @@ fn remove_output_png_files(settings: &Settings) {
         return;
     }
 
-    for entry in WalkDir::new(&settings.output_folder).into_iter().flatten() {
+    for entry in WalkDir::new(&settings.folder_with_files_to_check).into_iter().flatten() {
         let path = entry.path();
         if !path.is_file() {
             continue;

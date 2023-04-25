@@ -6,6 +6,7 @@ pub fn save_problematic_file(problematic_files_path: &str, svg_tool_name: &str, 
     let new_path = format!("{problematic_files_path}/{svg_tool_name}");
     let new_file_path = format!("{new_path}/{file_name}");
 
+    let _ = fs::create_dir_all(&new_path);
     if remove_problematic_files_after_copying {
         let _ = fs::copy(broken_svg_path, new_file_path);
         let _ = fs::remove_file(broken_svg_path);
