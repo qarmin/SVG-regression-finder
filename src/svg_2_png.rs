@@ -51,28 +51,21 @@ pub fn convert_svg_to_png(
                 output.status
             );
         }
-
-        if let Ok(message) = err_message {
-            if !message.is_empty() {
-                save_problematic_file(
-                    &settings.problematic_files_path, tool_name, source_file, settings.remove_problematic_files_after_copying,
-                );
-                println!(
-                    "\n\n{} {} -\ncommand {:?} {:?}",
-                    message,
-                    source_file,
-                    command.get_program(),
-                    command.get_args()
-                );
-                println!("{source_file}");
-                problematic_items.fetch_add(1, Ordering::Relaxed);
-                return false;
+        if !output.status.success() && !settings.debug_show_always_output {
+            save_problematic_file(
+                &settings.problematic_files_path, tool_name, source_file, settings.remove_problematic_files_after_copying,
+            );
+            problematic_items.fetch_add(1, Ordering::Relaxed);
+            let mut e_msg = String::new();
+            if let Ok(message) = err_message {
+                e_msg = message.clone();
             }
-        }
-        if let Ok(message) = normal_message {
-            if !message.is_empty() {
-                // println!("{} {:?} {}", field.name, message, source_file);
+            let mut n_msg = String::new();
+            if let Ok(message) = normal_message {
+                n_msg = message.clone();
             }
+            println!("\n\n{}\n{}\ncommand {:?} {:?}", e_msg, n_msg, command.get_program(), command.get_args());
+            return false;
         }
     }
     true
