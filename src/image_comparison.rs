@@ -45,7 +45,7 @@ pub fn compare_images(
             save_problematic_file(
                 &settings.problematic_files_path, &settings.first_tool_name, source_file, settings.remove_problematic_files_after_copying,
             );
-            println!("Failed to open {first_output_png}, reason {e}");
+            println!("Failed to open {first_output_png}, reason {e} (Probably app failed to generate png file)");
             problematic_items.fetch_add(1, Ordering::Relaxed);
             return;
         }
@@ -65,9 +65,6 @@ pub fn compare_images(
     if second_image.width() != first_image.width() || second_image.height() != first_image.height() {
         save_problematic_file(
             &settings.problematic_files_path, &settings.first_tool_name, source_file, settings.remove_problematic_files_after_copying,
-        );
-        save_problematic_file(
-            &settings.problematic_files_path, &settings.other_tool_name, source_file, settings.remove_problematic_files_after_copying,
         );
         println!(
             "Ignored images with non equal lengths {} {}x{}, {} {}x{}",

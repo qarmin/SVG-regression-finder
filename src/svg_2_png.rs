@@ -13,8 +13,6 @@ pub fn convert_svg_to_png(
     other_output_png: &str,
     problematic_items: &AtomicU32,
 ) -> bool {
-    let mut valid_conversion = true;
-
     let possible_output_png_original = source_file.replace(".svg", ".png"); // Usually png files just are created automatically by changing extensions
 
     let first_command = generate_command_from_items(
@@ -68,7 +66,7 @@ pub fn convert_svg_to_png(
                 );
                 println!("{source_file}");
                 problematic_items.fetch_add(1, Ordering::Relaxed);
-                valid_conversion = false;
+                return false;
             }
         }
         if let Ok(message) = normal_message {
@@ -77,7 +75,7 @@ pub fn convert_svg_to_png(
             }
         }
     }
-    valid_conversion
+    true
 }
 
 fn generate_command_from_items(name: &str, arguments: &str, source_file: &str, output_file: &str, px_size_of_generated_file: u32) -> Command {

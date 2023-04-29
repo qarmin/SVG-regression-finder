@@ -7,12 +7,12 @@ use std::{fs, process};
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
-use crate::image_comparsion::compare_images;
+use crate::image_comparison::compare_images;
 use crate::setting::{load_settings, Settings};
 use crate::svg_2_png::convert_svg_to_png;
 
 mod common;
-mod image_comparsion;
+mod image_comparison;
 mod setting;
 mod svg_2_png;
 
@@ -66,17 +66,26 @@ fn main() {
     if settings.limit_files != 0 {
         files_to_check = files_to_check[..settings.limit_files].to_vec();
     }
+    if settings.limit_threads != 0 {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(settings.limit_threads as usize)
+            .build_global()
+            .unwrap();
+    }
 
     let atomic: AtomicI32 = AtomicI32::new(0);
     let broken_items: AtomicU32 = AtomicU32::new(0);
     let problematic_items: AtomicU32 = AtomicU32::new(0);
+    let ignored_files: AtomicU32 = AtomicU32::new(0);
     // Remove output files if exists
     if settings.remove_files_from_output_folder_at_start {
         let _ = fs::remove_dir_all(&settings.output_folder);
         let _ = fs::remove_dir_all(&settings.problematic_files_path);
+        let _ = fs::remove_dir_all(&settings.ignored_files_path);
     }
     let _ = fs::create_dir_all(&settings.output_folder);
     let _ = fs::create_dir_all(&settings.problematic_files_path);
+    let _ = fs::create_dir_all(&settings.ignored_files_path);
 
     files_to_check.par_iter().for_each(|source_file| {
         let number = atomic.fetch_add(1, Ordering::Relaxed);
@@ -90,6 +99,16 @@ fn main() {
                 // https://github.com/thorvg/thorvg/issues/1367
                 {
                     // println!("Ignoring {} with text", source_file);
+                    ignored_files.fetch_add(1, Ordering::Relaxed);
+                    let new_file_name = format!(
+                        "{}/{}",
+                        settings.ignored_files_path,
+                        Path::new(&source_file).file_name().unwrap().to_string_lossy()
+                    );
+                    fs::copy(source_file, new_file_name).unwrap();
+                    if settings.remove_ignored_files_after_copying {
+                        let _ = fs::remove_file(source_file);
+                    }
                     return;
                 }
             }
@@ -111,9 +130,10 @@ fn main() {
 
     remove_output_png_files(&settings);
 
+    println!("Ignored {} files", ignored_files.load(Ordering::Relaxed));
     if broken_items.load(Ordering::Relaxed) > 0 || problematic_items.load(Ordering::Relaxed) > 0 {
         eprintln!(
-            "Regression results: Found {} files that looks different and {} files that cannot be tested",
+            "Changes results: Found {} files that looks different and {} files that cannot be tested",
             broken_items.load(Ordering::Relaxed),
             problematic_items.load(Ordering::Relaxed)
         );

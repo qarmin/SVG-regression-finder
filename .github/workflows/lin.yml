@@ -50,8 +50,8 @@ jobs:
 
       - name: Prepare tests
         run: |
-          wget https://github.com/qarmin/SVG-regression-finder/releases/download/0.2.0/SVG4BigPack.zip
-          unzip SVG4BigPack.zip
+          wget https://github.com/qarmin/SVG-regression-finder/releases/download/0.2.0/SVG5BigPack.zip
+          unzip SVG5BigPack.zip
           mv ci_settings.toml settings.toml
           mkdir BrokenSVG
 
@@ -94,8 +94,8 @@ jobs:
 
       - name: Prepare tests
         run: |
-          wget https://github.com/qarmin/SVG-regression-finder/releases/download/0.2.0/SVG4BigPack.zip
-          unzip SVG4BigPack.zip
+          wget https://github.com/qarmin/SVG-regression-finder/releases/download/0.2.0/SVG5BigPack.zip
+          unzip SVG5BigPack.zip
           mv ci_settings.toml settings.toml
           mkdir BrokenSVG
 
