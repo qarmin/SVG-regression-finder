@@ -38,4 +38,5 @@ jobs:
 
       - name: Run tests
         run: |
-          python3 misc/same_results.py AA_5.svg target/release/svg_tester 400 1000
+          cp misc/same_results.py same_results.py
+          python3 same_results.py AA_5.svg target/release/svg_tester 400 1000
