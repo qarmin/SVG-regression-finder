@@ -130,10 +130,12 @@ fn main() {
 
     remove_output_png_files(&settings);
 
-    println!("Ignored {} files", ignored_files.load(Ordering::Relaxed));
+    if ignored_files.load(Ordering::Relaxed) > 0 {
+        println!("Ignored {} files", ignored_files.load(Ordering::Relaxed));
+    }
     if broken_items.load(Ordering::Relaxed) > 0 || problematic_items.load(Ordering::Relaxed) > 0 {
         eprintln!(
-            "Changes results: Found {} files that looks different and {} files that cannot be tested",
+            "POSSIBLE_PROBLEM - Found {} files that looks different and {} files that cannot be tested",
             broken_items.load(Ordering::Relaxed),
             problematic_items.load(Ordering::Relaxed)
         );
