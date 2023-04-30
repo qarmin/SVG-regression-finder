@@ -1,0 +1,41 @@
+name: Thorvg Normal Regression
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 0 * * 2'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install things
+        run: |
+          sudo apt install -y wget2 librsvg2-dev librsvg2-bin ninja-build git gcc-multilib g++-multilib
+          sudo pip3 install meson
+
+      - name: Compile Thorvg
+        run: |
+          git clone https://github.com/thorvg/thorvg.git
+          cd thorvg
+          meson . build -Dtools=svg2png
+          sudo ninja -C build install
+          cd ..
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Prepare tests
+        run: |
+          wget https://github.com/thorvg/thorvg/files/11356766/AA_5.svg.zip
+          unzip AA_5.svg.zip
+
+      - name: Run tests
+        run: |
+          python3 same_results.py AA_5.svg target/release/svg_tester 400 1000
