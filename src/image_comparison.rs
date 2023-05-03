@@ -1,3 +1,4 @@
+use std::cmp::{max, min};
 use std::fs;
 use std::path::Path;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -67,13 +68,15 @@ pub fn compare_images(
             &settings.problematic_files_path, &settings.first_tool_name, source_file, settings.remove_problematic_files_after_copying,
         );
         println!(
-            "Ignored images with non equal lengths {} {}x{}, {} {}x{}",
+            "Ignored images with non equal lengths {} {}x{}, {} {}x{} - diff {}x{}",
             other_output_png,
             second_image.width(),
             second_image.height(),
             first_output_png,
             first_image.width(),
-            first_image.height()
+            first_image.height(),
+            max(second_image.width(), first_image.width()) - min(second_image.width(), first_image.width()),
+            max(second_image.height(), first_image.height()) - min(second_image.height(), first_image.height()),
         );
         problematic_items.fetch_add(1, Ordering::Relaxed);
         return;
