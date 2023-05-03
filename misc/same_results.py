@@ -2,11 +2,11 @@ import os
 import subprocess
 import sys
 
-if len(sys.argv) != 5 or not sys.argv[1].endswith(".svg") or not os.path.isfile(sys.argv[1]) or not os.path.isfile(sys.argv[2]):
+if len(sys.argv) != 5 or not sys.argv[1].endswith(".svg") or not os.path.isfile(sys.argv[1]) or not os.path.isfile(
+        sys.argv[2]):
     print('Proper usage "python app.py AA.svg /path/to/svg2png 400 100"')
     print('Proper usage "python app.py SVG_FILE SVG_PNG_PATH SIZE_IMAGE TRYING"')
     raise ValueError(f'Missing or invalid input file or missing path to svg2png')
-
 
 try_number = int(sys.argv[4])
 image_size = sys.argv[3]
@@ -17,7 +17,7 @@ image_output = image_input.replace(".svg", ".png")
 args = [svg2png_path, image_input, "-r", f"{image_size}x{image_size}"]
 sizes = {}
 for i in range(try_number + 1):
-    #if i % 100 == 0:
+    # if i % 100 == 0:
     #    print(f"{i + 1}/{try_number + 1}")
     subprocess.call(args, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     new_size = os.path.getsize(image_output)
