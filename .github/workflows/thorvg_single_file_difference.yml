@@ -40,3 +40,10 @@ jobs:
         run: |
           cp misc/same_results.py same_results.py
           python3 same_results.py AA_5.svg ./thorvg/build/src/bin/svg2png/svg2png 400 1000
+
+      - name: Store Thorvg
+        uses: actions/upload-artifact@v3
+        with:
+          name: thorvg-binaries
+          path: "./thorvg/build/src/"
+          if-no-files-found: ignore

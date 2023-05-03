@@ -61,10 +61,3 @@ jobs:
           name: problematic-images
           path: ProblematicSVG
           if-no-files-found: ignore
-
-      - name: Store Thorvg
-        uses: actions/upload-artifact@v3
-        with:
-          name: thorvg-binaries
-          path: "./thorvg/build/src/"
-          if-no-files-found: ignore
