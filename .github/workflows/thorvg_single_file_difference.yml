@@ -1,4 +1,4 @@
-name: Thorvg Normal Regression
+name: Thorvg Single File Difference
 
 on:
   push:
