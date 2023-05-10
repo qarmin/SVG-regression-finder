@@ -95,8 +95,17 @@ fn main() {
 
         if settings.ignore_thorvg_not_supported_items {
             if let Ok(t) = fs::read_to_string(source_file) {
-                if t.contains("<text") || t.contains("<filter") || t.contains("<image")
-                // https://github.com/thorvg/thorvg/issues/1367
+                if [
+                    "<text",     // Fonts are not implemented
+                    "<filter",   // Filters are not implemented in thorvg - but some may be implemented
+                    "<image",    // Used by me build not support images, but can in future
+                    "<!ENTITY", // <!ENTITY> is a xml std and it's not widely supported inside svg. https://github.com/thorvg/thorvg/issues/1255#issuecomment-1537563461
+                    "<flowRoot", // this was a feature described in one of the svg tiny versions pkt 4, but was removed from the latter versions. - https://github.com/thorvg/thorvg/issues/1255#issuecomment-1537563461 -  https://www.w3.org/TR/2004/WD-SVG12-20041027/
+                ]
+                .iter()
+                .any(|e| t.contains(e))
+                    // Nested svg files are not supported - https://github.com/thorvg/thorvg/issues/1255#issuecomment-1537563461
+                    || t.matches("<svg").count() > 1
                 {
                     // println!("Ignoring {} with text", source_file);
                     ignored_files.fetch_add(1, Ordering::Relaxed);
