@@ -22,7 +22,7 @@ jobs:
         run: cargo test --verbose
 
       - name: Store Linux
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: svg_tester
           path: target/release/svg_tester

@@ -46,7 +46,7 @@ jobs:
           python3 same_results.py AA_5.svg ./thorvg/build/src/tools/svg2png/svg2png 1500 1000
 
       - name: Store Thorvg
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: thorvg-binaries
           path: "./thorvg/build/src/"
