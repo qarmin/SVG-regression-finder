@@ -13,7 +13,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install things
         run: |
@@ -39,11 +39,11 @@ jobs:
       - name: Run tests
         run: |
           cp misc/same_results.py same_results.py
-          python3 same_results.py AA_5.svg ./thorvg/build/src/bin/svg2png/svg2png 1 1000 || true
-          python3 same_results.py AA_5.svg ./thorvg/build/src/bin/svg2png/svg2png 10 1000 || true
-          python3 same_results.py AA_5.svg ./thorvg/build/src/bin/svg2png/svg2png 100 1000 || true
-          python3 same_results.py AA_5.svg ./thorvg/build/src/bin/svg2png/svg2png 400 1000 || true
-          python3 same_results.py AA_5.svg ./thorvg/build/src/bin/svg2png/svg2png 1500 1000 || true
+          python3 same_results.py AA_5.svg ./thorvg/build/src/tools/svg2png/svg2png 1 1000
+          python3 same_results.py AA_5.svg ./thorvg/build/src/tools/svg2png/svg2png 10 1000
+          python3 same_results.py AA_5.svg ./thorvg/build/src/tools/svg2png/svg2png 100 1000
+          python3 same_results.py AA_5.svg ./thorvg/build/src/tools/svg2png/svg2png 400 1000
+          python3 same_results.py AA_5.svg ./thorvg/build/src/tools/svg2png/svg2png 1500 1000
 
       - name: Store Thorvg
         uses: actions/upload-artifact@v3

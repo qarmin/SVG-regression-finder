@@ -60,7 +60,7 @@ fn find_files(settings: &Settings) -> Vec<String> {
 
 fn main() {
     let settings = load_settings();
-    if settings.first_tool_path.starts_with("/") {
+    if settings.first_tool_path.contains("/") {
         if !Path::new(&settings.first_tool_path).is_file() {
             eprintln!("First tool not found at {}", settings.first_tool_path);
             process::exit(1);
@@ -73,7 +73,7 @@ fn main() {
         }
     }
 
-    if settings.other_tool_path.starts_with("/") {
+    if settings.other_tool_path.contains("/") {
         if !Path::new(&settings.other_tool_path).is_file() {
             eprintln!("Other tool not found at {}", settings.other_tool_path);
             process::exit(1);
