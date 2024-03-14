@@ -60,6 +60,32 @@ fn find_files(settings: &Settings) -> Vec<String> {
 
 fn main() {
     let settings = load_settings();
+    if settings.first_tool_path.starts_with("/") {
+        if !Path::new(&settings.first_tool_path).is_file() {
+            eprintln!("First tool not found at {}", settings.first_tool_path);
+            process::exit(1);
+        }
+    } else {
+        let path = which::which(&settings.first_tool_path);
+        if path.is_err() {
+            eprintln!("First tool not found at {}", settings.first_tool_path);
+            process::exit(1);
+        }
+    }
+
+    if settings.other_tool_path.starts_with("/") {
+        if !Path::new(&settings.other_tool_path).is_file() {
+            eprintln!("Other tool not found at {}", settings.other_tool_path);
+            process::exit(1);
+        }
+    } else {
+        let path = which::which(&settings.other_tool_path);
+        if path.is_err() {
+            eprintln!("Other tool not found at {}", settings.other_tool_path);
+            process::exit(1);
+        }
+    }
+
     let mut files_to_check = find_files(&settings);
     assert!(!files_to_check.is_empty());
 
