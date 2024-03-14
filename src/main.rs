@@ -57,9 +57,7 @@ fn find_files(settings: &Settings) -> Vec<String> {
     println!("Collected {} files to check", files_to_check.len());
     files_to_check
 }
-
-fn main() {
-    let settings = load_settings();
+fn check_tools(settings: &Settings) {
     if settings.first_tool_path.contains("/") {
         if !Path::new(&settings.first_tool_path).is_file() {
             eprintln!("First tool not found at {}", settings.first_tool_path);
@@ -85,6 +83,17 @@ fn main() {
             process::exit(1);
         }
     }
+
+    // Check if tools png output is same - should be different
+    if settings.first_tool_png_name_ending == settings.other_tool_png_name_ending {
+        eprintln!("First tool and other tool png name ending is same, should be different, because otherwise it will overwrite each other, and will give always same results");
+        process::exit(1);
+    }
+}
+
+fn main() {
+    let settings = load_settings();
+    check_tools(&settings);
 
     let mut files_to_check = find_files(&settings);
     assert!(!files_to_check.is_empty());
