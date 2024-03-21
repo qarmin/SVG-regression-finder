@@ -37,9 +37,12 @@ fn find_broken_thorvg_files(files_to_check: Vec<String>, settings: &Settings) {
         if number % 100 == 0 {
             println!("-- {}/{} - THORVG", number, all_files);
         }
-        let output = Command::new(&settings.thorvg_path)
+        let output = Command::new("timeout")
+            .arg("-v")
+            .arg(settings.timeout)
+            .arg(&settings.thorvg_path)
             .arg(&e)
-            .args(&["-r", "200x200"])
+            .args(&["-r", "20x20"])
             .output()
             .expect("Failed to execute thorvginfo");
         if output.status.success() {

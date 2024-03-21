@@ -37,7 +37,10 @@ fn find_broken_lottie_files(files_to_check: Vec<String>, settings: &Settings) {
         if number % 100 == 0 {
             println!("-- {}/{} - THORVG", number, all_files);
         }
-        let output = Command::new(&settings.lottie_path)
+        let output = Command::new("timeout")
+            .arg("-v")
+            .arg(settings.timeout)
+            .arg(&settings.lottie_path)
             .arg(&e)
             .args(&["-r", "200x200"])
             .output()

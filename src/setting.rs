@@ -27,7 +27,7 @@ pub struct Settings {
     pub thorvg_path: String,
     pub thorvg_broken_files_path: String,
     pub thorvg_test: bool,
-    // TODO timeout: u32,
+    pub timeout: u32,
     pub first_tool_name: String,
     pub first_tool_path: String,
     pub first_tool_png_name_ending: String,
@@ -71,7 +71,7 @@ pub fn load_settings() -> Settings {
         thorvg_broken_files_path: gs["thorvg_broken_files_path"].clone(),
         thorvg_test: gs["thorvg_test"].parse().unwrap(),
 
-        //timeout: gs["timeout"].parse().unwrap(),
+        timeout: gs["timeout"].parse().unwrap(),
         first_tool_name: fts["name"].clone(),
         first_tool_path: fts["path"].clone(),
         first_tool_png_name_ending: fts["png_name_ending"].clone(),

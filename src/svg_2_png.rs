@@ -73,13 +73,15 @@ pub fn convert_svg_to_png(
 
 fn generate_command_from_items(name: &str, arguments: &str, source_file: &str, output_file: &str, px_size_of_generated_file: u32) -> Command {
     let new_arguments = arguments.replace("{SIZE}", &px_size_of_generated_file.to_string());
-    let mut comm = Command::new(name);
+    let mut com = Command::new("timeout");
+    com.arg("-v").arg(settings.timeout);
+    com.arg(name);
     // FILE must be renamed after splitting arguments by space, because source_file may contain spaces
     // and broke file
-    comm.args(
+    com.args(
         new_arguments
             .split(' ')
             .map(|e| e.replace("{FILE}", source_file).replace("{OUTPUT_FILE}", output_file)),
     );
-    comm
+    com
 }
