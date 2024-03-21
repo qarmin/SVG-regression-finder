@@ -1,4 +1,4 @@
-name: Thorvg x2 Thread Sanitizer 1000
+name: Thorvg Thread Sanitizer Fuzzer
 
 on:
   push:
@@ -19,6 +19,7 @@ jobs:
         run: |
           sudo apt update || true;sudo apt install -y wget2 librsvg2-dev librsvg2-bin ninja-build git gcc-multilib g++-multilib earlyoom
           sudo pip3 install meson
+          cargo install create_broken_files
 
       - name: Compile Thorvg
         run: |
@@ -36,6 +37,9 @@ jobs:
           wget -q https://github.com/qarmin/SVG-regression-finder/releases/download/0.2.0/SVG1000.zip
           unzip -q SVG1000.zip
           mv SVG1000 SVG5BigPack
+          cd SVG5BigPack
+          create_broken_files --input-path . --output-path . --number-of-broken-files 10
+          cd ..
           mv misc/thorvg_settings.toml settings.toml
 
       - name: Run tests

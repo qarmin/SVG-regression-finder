@@ -39,4 +39,4 @@ jobs:
 
       - name: Run tests
         run: |
-          target/release/svg_tester
+          timeout -v 14400 target/release/svg_tester
