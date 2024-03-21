@@ -1,6 +1,7 @@
 #![allow(clippy::similar_names)]
 
 use std::path::Path;
+use std::process::{exit, Command};
 use std::sync::atomic::{AtomicI32, AtomicU32, Ordering};
 use std::{fs, process};
 
@@ -8,13 +9,17 @@ use rayon::prelude::*;
 use walkdir::WalkDir;
 
 use crate::image_comparison::compare_images;
+use crate::lottie::{test_lottie, test_thorvg};
 use crate::setting::{load_settings, Settings};
 use crate::svg_2_png::convert_svg_to_png;
+use crate::thorvg::test_lottie;
 
 mod common;
 mod image_comparison;
+mod lottie;
 mod setting;
 mod svg_2_png;
+mod thorvg;
 
 struct Hamming;
 
@@ -28,7 +33,8 @@ impl bk_tree::Metric<Vec<u8>> for Hamming {
     }
 }
 
-fn find_files(settings: &Settings) -> Vec<String> {
+fn find_files(settings: &Settings, svg_check: bool) -> Vec<String> {
+    let extension = if svg_check { ".svg" } else { ".json" };
     let mut files_to_check = Vec::new();
     println!("Starting to collect files to check");
     if Path::new(&settings.folder_with_files_to_check).is_dir() {
@@ -41,7 +47,7 @@ fn find_files(settings: &Settings) -> Vec<String> {
                 Ok(t) => t.to_string_lossy().to_string(),
                 Err(_) => continue,
             };
-            if full_path.ends_with(".svg") {
+            if full_path.ends_with(extension) {
                 files_to_check.push(full_path);
             }
         }
@@ -95,7 +101,16 @@ fn main() {
     let settings = load_settings();
     check_tools(&settings);
 
-    let mut files_to_check = find_files(&settings);
+    // Comment to test svg files
+    if settings.lottie_test {
+        test_lottie(&settings);
+        return;
+    } else if settings.thorvg_test {
+        test_thorvg(&settings);
+        return;
+    }
+
+    let mut files_to_check = find_files(&settings, true);
     assert!(!files_to_check.is_empty());
 
     if settings.limit_files != 0 {
