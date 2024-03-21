@@ -1,4 +1,4 @@
-name: Thorvg Thorvg All pack
+name: Thorvg simple check
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
         run: |
           git clone https://github.com/thorvg/thorvg.git
           cd thorvg
-          meson . build -Dtools=svg2png
+          meson . build -Dtools=svg2png -Db_sanitize=address
           sudo ninja -C build install
           cd ..
 
@@ -33,31 +33,26 @@ jobs:
 
       - name: Prepare tests
         run: |
-          wget https://github.com/qarmin/SVG-regression-finder/releases/download/0.2.0/SVG5BigPack.zip
-          unzip SVG5BigPack.zip
-          mv misc/thorvg_settings.toml settings.toml
+          wget https://github.com/qarmin/SVG-regression-finder/releases/download/0.2.0/SVG1000.zip
+          unzip SVG1000.zip
+          mv SVG1000 SVG5BigPack
+          mv misc/ci_settings_as_much.toml settings.toml
 
       - name: Run tests
         run: |
           target/release/svg_tester
 
-      - name: Store Ignored Images
+      - name: Store Broken files
         uses: actions/upload-artifact@v4
         with:
-          name: ignored-images
-          path: IgnoredSVG
+          name: brokenFiles
+          path: BrokenFILES
           if-no-files-found: ignore
 
-      - name: Store Broken Images
-        uses: actions/upload-artifact@v4
-        with:
-          name: broken-images
-          path: BrokenSVG
-          if-no-files-found: ignore
-
-      - name: Store Problematic Images
-        uses: actions/upload-artifact@v4
-        with:
-          name: problematic-images
-          path: ProblematicSVG
-          if-no-files-found: ignore
+      # Fail if broken files path exists
+      - name: Fail if broken files
+        run: |
+          if [ -d BrokenFILES ]; then
+              echo "Broken files found"
+              exit 1
+          fi

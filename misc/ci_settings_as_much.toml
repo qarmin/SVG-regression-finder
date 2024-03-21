@@ -1,11 +1,11 @@
 [general]
-folder_with_files_to_check = "/home/rafal/Desktop/SVG/SVG5BigPack"
-problematic_files_path = "/home/rafal/Desktop/SVG/ProblematicSVG" # Where to store problematic files, in which conversion failed(e.g. due program crash)
-output_folder = "/home/rafal/Desktop/SVG/BrokenSVG" # Place where to save files(Input and output that show differences)
-ignored_files_path = "/home/rafal/Desktop/SVG/IgnoredSVG" # Place where to save ignored files
+folder_with_files_to_check = "SVG5BigPack"
+problematic_files_path = "ProblematicSVG" # Where to store problematic files, in which conversion failed(e.g. due program crash)
+output_folder = "BrokenSVG" # Place where to save files(Input and output that show differences)
+ignored_files_path = "IgnoredSVG" # Place where to save ignored files
 timeout = 0 # TODO not working yet, use bigger value than 0 to enable timeout functionality, time in seconds
 limit_threads = 0 # 0 will use all available threads
-px_size_of_generated_file = 1
+px_size_of_generated_file = 400
 ignore_conversion_step = false # Ignore step with conversion files from svg to png, just compare files
 ignore_similarity_checking_step = false # Useful to finding problems with generating files
 ignore_thorvg_not_supported_items = true # Thorvg not supports files with text, filters
@@ -17,34 +17,22 @@ return_error_when_finding_invalid_files = false # When finding invalid files(bro
 remove_problematic_files_after_copying = false # Remove from output folder problematic svg files
 remove_broken_files_after_copying = false # Remove from output folder broken svg files
 remove_ignored_files_after_copying = false # Removes not supported folders after copyting
-remove_generated_png_files_at_end = true # Remove all png from input folder at end
-lottie_path = "/home/rafal/test/thorvg/build/src/tools/lottie2gif/lottie2gif"
-lottie_broken_files_path = "/home/rafal/Desktop/SVG/BrokenLottie"
+remove_generated_png_files_at_end = false # Remove all png from output folder at end
+lottie_path = ""
+lottie_broken_files_path = ""
 lottie_test = false
-thorvg_path = "/home/rafal/test/thorvg/build/src/tools/svg2png/svg2png"
-thorvg_broken_files_path = "/home/rafal/Desktop/SVG/BrokenThorvg"
+thorvg_path = "./thorvg/build/src/tools/svg2png/svg2png"
+thorvg_broken_files_path = "BrokenFILES"
 thorvg_test = true
 
 [first_tool]
 name = "thorvg"
-path = "/home/rafal/test/thorvg/build/src/bin/svg2png/svg2png"
+path = "./thorvg/build/src/tools/svg2png/svg2png"
 png_name_ending = "_thorvg.png"
 arguments = "{FILE} -r {SIZE}x{SIZE}"
 
 [other_tool]
 name = "rsvg"
-path = "/home/rafal/test/librsvg/target/release/rsvg-convert"
+path = "rsvg-convert"
 png_name_ending = "_rsvg.png"
 arguments = "{FILE} -o {OUTPUT_FILE} -w {SIZE} -h {SIZE}"
-
-#[other_tool]
-#name = "resvg"
-#path = "resvg"
-#png_name_ending = "_resvg.png"
-#arguments = "{FILE} {OUTPUT_FILE} -w {SIZE} -h {SIZE}"
-#
-#[other_tool]
-#name = "inkscape"
-#path = "inkscape"
-#png_name_ending = "_inkscape.png"
-#arguments = "{FILE} --export-type=png -w {SIZE} -h {SIZE}"

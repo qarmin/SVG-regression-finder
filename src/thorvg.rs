@@ -42,12 +42,16 @@ fn find_broken_thorvg_files(files_to_check: Vec<String>, settings: &Settings) {
             .args(&["-r", "200x200"])
             .output()
             .expect("Failed to execute thorvginfo");
-        let all = format!("{}\n{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
-        let invalid_info = ["LeakSanitizer", "AddressSanitizer"];
-        if invalid_info.iter().any(|e| all.contains(e)) || all.trim().len() > 200 {
-            println!("Broken file {}({})\n{}\n\n", e, (all.len()), all);
-            copy_broken_file((e, all), &settings);
+        if output.status.success() {
+            return;
         }
+        let all = format!("{}\n{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
+
+        if (all.contains("simpleXmlParse") && all.contains("LeakSanitizer")) || all.contains("Couldn't load image") {
+            return; // Leak with simpleXmlParse is known issue
+        }
+        println!("{}({})\n{}\n\n", e, (all.len()), all);
+        copy_broken_file((e, all), &settings);
     });
 }
 fn delete_gif_files(settings: &Settings) {
@@ -60,7 +64,7 @@ fn delete_gif_files(settings: &Settings) {
             Ok(t) => t.to_string_lossy().to_string(),
             Err(_) => continue,
         };
-        if full_path.ends_with(".gif") {
+        if full_path.ends_with(".svg") {
             let _ = fs::remove_file(full_path);
         }
     }

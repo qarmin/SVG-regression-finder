@@ -18,6 +18,12 @@ remove_problematic_files_after_copying = false # Remove from output folder probl
 remove_broken_files_after_copying = false # Remove from output folder broken svg files
 remove_ignored_files_after_copying = false # Removes not supported folders after copyting
 remove_generated_png_files_at_end = false # Remove all png from output folder at end
+lottie_path = ""
+lottie_broken_files_path = ""
+lottie_test = false
+thorvg_path = ""
+thorvg_broken_files_path = ""
+thorvg_test = false
 
 [first_tool]
 name = "thorvg"

@@ -9,10 +9,10 @@ use rayon::prelude::*;
 use walkdir::WalkDir;
 
 use crate::image_comparison::compare_images;
-use crate::lottie::{test_lottie, test_thorvg};
+use crate::lottie::test_lottie;
 use crate::setting::{load_settings, Settings};
 use crate::svg_2_png::convert_svg_to_png;
-use crate::thorvg::test_lottie;
+use crate::thorvg::test_thorvg;
 
 mod common;
 mod image_comparison;
