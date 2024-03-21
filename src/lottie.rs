@@ -8,15 +8,15 @@ use std::sync::atomic::{AtomicI32, Ordering};
 use walkdir::WalkDir;
 
 pub fn test_lottie(settings: &Settings) {
-    let files_to_check = find_files(&settings, false);
+    let files_to_check = find_files(settings, false);
 
     assert!(!files_to_check.is_empty());
 
     let _ = fs::remove_dir_all(&settings.lottie_broken_files_path);
     let _ = fs::create_dir(&settings.lottie_broken_files_path);
 
-    find_broken_lottie_files(files_to_check, &settings);
-    delete_gif_files(&settings);
+    find_broken_lottie_files(files_to_check, settings);
+    delete_gif_files(settings);
 
     exit(0);
 }
@@ -39,17 +39,17 @@ fn find_broken_lottie_files(files_to_check: Vec<String>, settings: &Settings) {
         }
         let output = Command::new("timeout")
             .arg("-v")
-            .arg(settings.timeout)
+            .arg(settings.timeout.to_string())
             .arg(&settings.lottie_path)
             .arg(&e)
-            .args(&["-r", "200x200"])
+            .args(["-r", "200x200"])
             .output()
             .expect("Failed to execute lottieinfo");
         let all = format!("{}\n{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
         let invalid_info = ["LeakSanitizer", "AddressSanitizer"];
         if invalid_info.iter().any(|e| all.contains(e)) || all.trim().len() > 200 {
             println!("Broken file {}({})\n{}\n\n", e, (all.len()), all);
-            copy_broken_file((e, all), &settings);
+            copy_broken_file((e, all), settings);
         }
     });
 }

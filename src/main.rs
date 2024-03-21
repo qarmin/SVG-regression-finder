@@ -1,7 +1,6 @@
 #![allow(clippy::similar_names)]
 
 use std::path::Path;
-use std::process::{exit, Command};
 use std::sync::atomic::{AtomicI32, AtomicU32, Ordering};
 use std::{fs, process};
 
@@ -64,7 +63,7 @@ fn find_files(settings: &Settings, svg_check: bool) -> Vec<String> {
     files_to_check
 }
 fn check_tools(settings: &Settings) {
-    if settings.first_tool_path.contains("/") {
+    if settings.first_tool_path.contains('/') {
         if !Path::new(&settings.first_tool_path).is_file() {
             eprintln!("First tool not found at {}", settings.first_tool_path);
             process::exit(1);
@@ -77,7 +76,7 @@ fn check_tools(settings: &Settings) {
         }
     }
 
-    if settings.other_tool_path.contains("/") {
+    if settings.other_tool_path.contains('/') {
         if !Path::new(&settings.other_tool_path).is_file() {
             eprintln!("Other tool not found at {}", settings.other_tool_path);
             process::exit(1);

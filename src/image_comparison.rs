@@ -95,7 +95,7 @@ pub fn compare_images(
     bktree.add(second_image_hash);
 
     let finds = bktree.find(&first_image_hash, 9999).collect::<Vec<_>>();
-    let similarity_found = match finds.get(0) {
+    let similarity_found = match finds.first() {
         Some(t) => t.0,
         None => 999_999,
     };

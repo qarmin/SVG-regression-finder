@@ -17,9 +17,11 @@ pub fn convert_svg_to_png(
 
     let first_command = generate_command_from_items(
         &settings.first_tool_path, &settings.first_tool_arguments, source_file, &possible_output_png_original, settings.px_size_of_generated_file,
+        settings.timeout,
     );
     let other_command = generate_command_from_items(
         &settings.other_tool_path, &settings.other_tool_arguments, source_file, &possible_output_png_original, settings.px_size_of_generated_file,
+        settings.timeout,
     );
 
     for (mut command, output_png, tool_name) in [
@@ -71,10 +73,17 @@ pub fn convert_svg_to_png(
     true
 }
 
-fn generate_command_from_items(name: &str, arguments: &str, source_file: &str, output_file: &str, px_size_of_generated_file: u32) -> Command {
+fn generate_command_from_items(
+    name: &str,
+    arguments: &str,
+    source_file: &str,
+    output_file: &str,
+    px_size_of_generated_file: u32,
+    timeout: u32,
+) -> Command {
     let new_arguments = arguments.replace("{SIZE}", &px_size_of_generated_file.to_string());
     let mut com = Command::new("timeout");
-    com.arg("-v").arg(settings.timeout);
+    com.arg("-v").arg(timeout.to_string());
     com.arg(name);
     // FILE must be renamed after splitting arguments by space, because source_file may contain spaces
     // and broke file

@@ -8,15 +8,15 @@ use std::sync::atomic::{AtomicI32, Ordering};
 use walkdir::WalkDir;
 
 pub fn test_thorvg(settings: &Settings) {
-    let files_to_check = find_files(&settings, true);
+    let files_to_check = find_files(settings, true);
 
     assert!(!files_to_check.is_empty());
 
     let _ = fs::remove_dir_all(&settings.thorvg_broken_files_path);
     let _ = fs::create_dir(&settings.thorvg_broken_files_path);
 
-    find_broken_thorvg_files(files_to_check, &settings);
-    delete_gif_files(&settings);
+    find_broken_thorvg_files(files_to_check, settings);
+    delete_gif_files(settings);
 
     exit(0);
 }
@@ -39,10 +39,10 @@ fn find_broken_thorvg_files(files_to_check: Vec<String>, settings: &Settings) {
         }
         let output = Command::new("timeout")
             .arg("-v")
-            .arg(settings.timeout)
+            .arg(settings.timeout.to_string())
             .arg(&settings.thorvg_path)
             .arg(&e)
-            .args(&["-r", "20x20"])
+            .args(["-r", "20x20"])
             .output()
             .expect("Failed to execute thorvginfo");
         if output.status.success() {
@@ -54,7 +54,7 @@ fn find_broken_thorvg_files(files_to_check: Vec<String>, settings: &Settings) {
             return; // Leak with simpleXmlParse is known issue
         }
         println!("{}({})\n{}\n\n", e, (all.len()), all);
-        copy_broken_file((e, all), &settings);
+        copy_broken_file((e, all), settings);
     });
 }
 fn delete_gif_files(settings: &Settings) {
