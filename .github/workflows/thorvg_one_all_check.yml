@@ -1,4 +1,4 @@
-name: Thorvg simple check
+name: Thorvg all check
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
 
       - name: Install things
         run: |
-          sudo apt install -y wget2 librsvg2-dev librsvg2-bin ninja-build git gcc-multilib g++-multilib earlyoom
+          sudo apt update || true;sudo apt install -y wget2 librsvg2-dev librsvg2-bin ninja-build git gcc-multilib g++-multilib earlyoom
           sudo pip3 install meson
 
       - name: Compile Thorvg
@@ -33,9 +33,8 @@ jobs:
 
       - name: Prepare tests
         run: |
-          wget https://github.com/qarmin/SVG-regression-finder/releases/download/0.2.0/SVG1000.zip
-          unzip SVG1000.zip
-          mv SVG1000 SVG5BigPack
+          wget -q https://github.com/qarmin/SVG-regression-finder/releases/download/0.2.0/SVG5BigPack.zip
+          unzip -q SVG5BigPack.zip
           mv misc/ci_settings_as_much.toml settings.toml
 
       - name: Run tests

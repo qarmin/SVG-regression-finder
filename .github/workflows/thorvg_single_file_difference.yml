@@ -17,7 +17,7 @@ jobs:
 
       - name: Install things
         run: |
-          sudo apt install -y wget2 librsvg2-dev librsvg2-bin ninja-build git gcc-multilib g++-multilib earlyoom
+          sudo apt update || true;sudo apt install -y wget2 librsvg2-dev librsvg2-bin ninja-build git gcc-multilib g++-multilib earlyoom
           sudo pip3 install meson
 
       - name: Compile Thorvg
@@ -33,8 +33,8 @@ jobs:
 
       - name: Prepare tests
         run: |
-          wget https://github.com/thorvg/thorvg/files/11356766/AA_5.svg.zip
-          unzip AA_5.svg.zip
+          wget -q https://github.com/thorvg/thorvg/files/11356766/AA_5.svg.zip
+          unzip -q AA_5.svg.zip
 
       - name: Run tests
         run: |
