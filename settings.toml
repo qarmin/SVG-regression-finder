@@ -3,7 +3,7 @@ folder_with_files_to_check = "/home/rafal/Desktop/SVG/SVG5BigPack"
 problematic_files_path = "/home/rafal/Desktop/SVG/ProblematicSVG" # Where to store problematic files, in which conversion failed(e.g. due program crash)
 output_folder = "/home/rafal/Desktop/SVG/BrokenSVG" # Place where to save files(Input and output that show differences)
 ignored_files_path = "/home/rafal/Desktop/SVG/IgnoredSVG" # Place where to save ignored files
-timeout = 0 # TODO not working yet, use bigger value than 0 to enable timeout functionality, time in seconds
+timeout = 120 # TODO not working yet, use bigger value than 0 to enable timeout functionality, time in seconds
 limit_threads = 0 # 0 will use all available threads
 px_size_of_generated_file = 1
 ignore_conversion_step = false # Ignore step with conversion files from svg to png, just compare files
@@ -27,7 +27,7 @@ thorvg_test = true
 
 [first_tool]
 name = "thorvg"
-path = "/home/rafal/test/thorvg/build/src/bin/svg2png/svg2png"
+path = "/home/rafal/test/thorvg/build/src/tools/svg2png/svg2png"
 png_name_ending = "_thorvg.png"
 arguments = "{FILE} -r {SIZE}x{SIZE}"
 

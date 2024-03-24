@@ -86,7 +86,7 @@ pub fn compare_images(
     remove_alpha_channel(&mut first_image);
     remove_alpha_channel(&mut second_image);
 
-    let hasher = HasherConfig::new().hash_alg(HashAlg::DoubleGradient).hash_size(16, 16).to_hasher();
+    let hasher = HasherConfig::new().hash_alg(HashAlg::Blockhash).hash_size(16, 16).to_hasher();
 
     let second_image_hash = hasher.hash_image(&second_image).as_bytes().to_vec();
     let first_image_hash = hasher.hash_image(&first_image).as_bytes().to_vec();
