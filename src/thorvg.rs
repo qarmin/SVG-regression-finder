@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicI32, Ordering};
 use walkdir::WalkDir;
 
 pub fn test_thorvg(settings: &Settings) {
-    let files_to_check = find_files(settings, true);
+    let files_to_check = find_files(settings, ".svg");
 
     assert!(!files_to_check.is_empty());
 

@@ -22,14 +22,17 @@ pub fn remove_alpha_channel(dynamic_image: &mut DynamicImage) {
             // Everything that contains alpha is changed to totally white pixel, which should help
             // To remove a lot of false positives(I expect very few false negatives)
             if px.0[3] != 255 {
-                px.0[0] = 255;
-                px.0[1] = 255;
-                px.0[2] = 255;
+                // px.0[0] = 0;
+                // px.0[1] = 0;
+                // px.0[2] = 0;
                 px.0[3] = 255;
                 dynamic_image.put_pixel(x, y, px);
             }
         }
     }
+    // Save alpha
+    // let path = format!("/home/rafal/Desktop/Untitled Folder 5/{}.png", thread_rng().gen::<u32>());
+    // dynamic_image.save(path).unwrap();
 }
 
 pub fn compare_images(
@@ -82,25 +85,9 @@ pub fn compare_images(
         return;
     }
 
-    // Hash algorithms works bad with images with alpha channel
-    remove_alpha_channel(&mut first_image);
-    remove_alpha_channel(&mut second_image);
+    let difference_between = get_difference_between_images(HashAlg::Gradient, &mut first_image, &mut second_image, true);
 
-    let hasher = HasherConfig::new().hash_alg(HashAlg::Blockhash).hash_size(16, 16).to_hasher();
-
-    let second_image_hash = hasher.hash_image(&second_image).as_bytes().to_vec();
-    let first_image_hash = hasher.hash_image(&first_image).as_bytes().to_vec();
-    let mut bktree = BKTree::new(Hamming);
-
-    bktree.add(second_image_hash);
-
-    let finds = bktree.find(&first_image_hash, 9999).collect::<Vec<_>>();
-    let similarity_found = match finds.first() {
-        Some(t) => t.0,
-        None => 999_999,
-    };
-
-    if !finds.is_empty() && similarity_found <= settings.similarity {
+    if difference_between <= settings.max_difference {
     } else {
         copy_to_file_name(first_output_png, &settings.output_folder);
         copy_to_file_name(other_output_png, &settings.output_folder);
@@ -110,6 +97,27 @@ pub fn compare_images(
             fs::remove_file(source_file).unwrap();
         }
     }
+}
+
+pub fn get_difference_between_images(hash_alg: HashAlg, first_image: &mut DynamicImage, second_image: &mut DynamicImage, remove_alpha: bool) -> u32 {
+    if remove_alpha {
+        remove_alpha_channel(first_image);
+        remove_alpha_channel(second_image);
+    }
+    let hasher = HasherConfig::new().hash_alg(hash_alg).hash_size(16, 16).to_hasher(); // 8 // 17
+
+    let second_image_hash = hasher.hash_image(second_image).as_bytes().to_vec();
+    let first_image_hash = hasher.hash_image(first_image).as_bytes().to_vec();
+    let mut bktree = BKTree::new(Hamming);
+
+    bktree.add(second_image_hash);
+
+    let finds = bktree.find(&first_image_hash, 9999).collect::<Vec<_>>();
+    let difference_between = match finds.first() {
+        Some(t) => t.0,
+        None => 999_999,
+    };
+    difference_between
 }
 
 pub fn copy_to_file_name(original_file: &str, output_folder: &str) {

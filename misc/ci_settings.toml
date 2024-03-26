@@ -9,7 +9,7 @@ px_size_of_generated_file = 400
 ignore_conversion_step = false # Ignore step with conversion files from svg to png, just compare files
 ignore_similarity_checking_step = false # Useful to finding problems with generating files
 ignore_thorvg_not_supported_items = true # Thorvg not supports files with text, filters
-similarity = 10 # Bigger similiarity will show only broken files that are completelly different, looks that 0-100 is quite reasonable range
+max_difference = 10 # Bigger similiarity will show only broken files that are completelly different, looks that 0-100 is quite reasonable range
 limit_files = 0 # Limit checked files, useful if you are just checking this, 0 will remove limit of checked files
 remove_files_from_output_folder_at_start = true # Useful if you run app with different settings and you don't want to remove files one by one
 debug_show_always_output = false # Allows to find broken files
@@ -29,10 +29,10 @@ thorvg_test = false
 name = "thorvg"
 path = "./thorvg/build/src/tools/svg2png/svg2png"
 png_name_ending = "_thorvg.png"
-arguments = "{FILE} -r {SIZE}x{SIZE}"
+arguments = "{FILE} -r {SIZE}x{SIZE} -b ffffff"
 
 [other_tool]
 name = "rsvg"
 path = "rsvg-convert"
 png_name_ending = "_rsvg.png"
-arguments = "{FILE} -o {OUTPUT_FILE} -w {SIZE} -h {SIZE}"
+arguments = "{FILE} -o {OUTPUT_FILE} -w {SIZE} -h {SIZE} -b white"

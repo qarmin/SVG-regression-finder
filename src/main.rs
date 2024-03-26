@@ -1,13 +1,16 @@
 #![allow(clippy::similar_names)]
 
+use image_hasher::HashAlg;
+use std::collections::BTreeMap;
 use std::path::Path;
+use std::process::exit;
 use std::sync::atomic::{AtomicI32, AtomicU32, Ordering};
 use std::{fs, process};
 
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
-use crate::image_comparison::compare_images;
+use crate::image_comparison::{compare_images, get_difference_between_images};
 use crate::lottie::test_lottie;
 use crate::setting::{load_settings, Settings};
 use crate::svg_2_png::convert_svg_to_png;
@@ -32,8 +35,7 @@ impl bk_tree::Metric<Vec<u8>> for Hamming {
     }
 }
 
-fn find_files(settings: &Settings, svg_check: bool) -> Vec<String> {
-    let extension = if svg_check { ".svg" } else { ".json" };
+fn find_files(settings: &Settings, extension: &str) -> Vec<String> {
     let mut files_to_check = Vec::new();
     println!("Starting to collect files to check");
     if Path::new(&settings.folder_with_files_to_check).is_dir() {
@@ -97,7 +99,57 @@ fn check_tools(settings: &Settings) {
     }
 }
 
+fn test_hashers() {
+    let hash_algs = [
+        HashAlg::VertGradient,
+        HashAlg::DoubleGradient,
+        HashAlg::Blockhash,
+        HashAlg::Mean,
+        HashAlg::Median,
+        HashAlg::Gradient,
+    ];
+    // let hash_algs = [HashAlg::VertGradient];
+
+    let files = find_files(&load_settings(), ".png");
+    // Remove "_rsvg" and "_thorvg" from file names
+    let mut files_cleaned = files
+        .iter()
+        .map(|file| file.replace("_rsvg.png", "").replace("_thorvg.png", ""))
+        .collect::<Vec<_>>();
+    files_cleaned.sort_unstable();
+    files_cleaned.dedup();
+    let dynamic_images = files_cleaned
+        .into_iter()
+        .map(|file| {
+            let thorvg_file_name = format!("{}_thorvg.png", file);
+            let rsvg_file_name = format!("{}_rsvg.png", file);
+            let thorvg_image = image::open(&thorvg_file_name).unwrap();
+            let rsvg_image = image::open(&rsvg_file_name).unwrap();
+            (thorvg_file_name, thorvg_image, rsvg_file_name, rsvg_image)
+        })
+        .collect::<Vec<_>>();
+
+    let mut differences: BTreeMap<String, u32> = BTreeMap::new();
+    for (_thorvg_file_name, thorvg_image, _rsvg_file_name, rsvg_image) in dynamic_images {
+        for alg in hash_algs {
+            for remove_alpha in [true, false] {
+                let diff = get_difference_between_images(alg, &mut thorvg_image.clone(), &mut rsvg_image.clone(), remove_alpha);
+                let key = format!("{:?}-{}", alg, remove_alpha);
+                differences.entry(key).and_modify(|e| *e += diff).or_insert(diff);
+                continue;
+            }
+        }
+    }
+
+    for (key, value) in differences {
+        println!("{}: {}", key, value);
+    }
+    exit(0);
+}
+
 fn main() {
+    // test_hashers();
+
     let settings = load_settings();
     check_tools(&settings);
 
@@ -110,7 +162,7 @@ fn main() {
         return;
     }
 
-    let mut files_to_check = find_files(&settings, true);
+    let mut files_to_check = find_files(&settings, ".svg");
     assert!(!files_to_check.is_empty());
 
     if settings.limit_files != 0 {
