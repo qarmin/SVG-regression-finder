@@ -62,6 +62,7 @@ fn find_files(settings: &Settings, svg_check: bool) -> Vec<String> {
     println!("Collected {} files to check", files_to_check.len());
     files_to_check
 }
+
 fn check_tools(settings: &Settings) {
     if settings.first_tool_path.contains('/') {
         if !Path::new(&settings.first_tool_path).is_file() {
@@ -145,14 +146,19 @@ fn main() {
         if settings.ignore_thorvg_not_supported_items {
             if let Ok(t) = fs::read_to_string(source_file) {
                 if [
+                    "<foreignObject", // https://github.com/thorvg/thorvg/issues/1255#issuecomment-2019804429
+                    "<pattern", // https://github.com/thorvg/thorvg/issues/1255#issuecomment-2019804429
+                    "<switch",// https://github.com/thorvg/thorvg/issues/1255#issuecomment-2019804429
+                    "x:href", // https://github.com/thorvg/thorvg/issues/1255#issuecomment-2019804429
+                    "mix-blend-mode:multiply", // https://github.com/thorvg/thorvg/issues/1255#issuecomment-2019804429
                     "<text",     // Fonts are not implemented
                     "<filter",   // Filters are not implemented in thorvg - but some may be implemented
                     "<image",    // Used by me build not support images, but can in future
                     "<!ENTITY", // <!ENTITY> is a xml std and it's not widely supported inside svg. https://github.com/thorvg/thorvg/issues/1255#issuecomment-1537563461
                     "<flowRoot", // this was a feature described in one of the svg tiny versions pkt 4, but was removed from the latter versions. - https://github.com/thorvg/thorvg/issues/1255#issuecomment-1537563461 -  https://www.w3.org/TR/2004/WD-SVG12-20041027/
                 ]
-                .iter()
-                .any(|e| t.contains(e))
+                    .iter()
+                    .any(|e| t.contains(e))
                     // Nested svg files are not supported - https://github.com/thorvg/thorvg/issues/1255#issuecomment-1537563461
                     || t.matches("<svg").count() > 1
                 {
