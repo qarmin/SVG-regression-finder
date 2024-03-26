@@ -85,7 +85,7 @@ pub fn compare_images(
         return;
     }
 
-    let difference_between = get_difference_between_images(HashAlg::Gradient, &mut first_image, &mut second_image, true);
+    let difference_between = get_difference_between_images(HashAlg::Median, &mut first_image, &mut second_image, true);
 
     if difference_between <= settings.max_difference {
     } else {
