@@ -114,6 +114,7 @@ fn test_hashers() {
     // Remove "_rsvg" and "_thorvg" from file names
     let mut files_cleaned = files
         .iter()
+        .filter(|e| e.contains("_rsvg.png") || e.contains("_thorvg.png"))
         .map(|file| file.replace("_rsvg.png", "").replace("_thorvg.png", ""))
         .collect::<Vec<_>>();
     files_cleaned.sort_unstable();
@@ -133,7 +134,9 @@ fn test_hashers() {
     for (_thorvg_file_name, thorvg_image, _rsvg_file_name, rsvg_image) in dynamic_images {
         for alg in hash_algs {
             for remove_alpha in [true, false] {
-                let diff = get_difference_between_images(alg, &mut thorvg_image.clone(), &mut rsvg_image.clone(), remove_alpha);
+                let diff = *get_difference_between_images(&[alg], &mut thorvg_image.clone(), &mut rsvg_image.clone(), remove_alpha)
+                    .first()
+                    .unwrap();
                 let key = format!("{:?}-{}", alg, remove_alpha);
                 differences.entry(key).and_modify(|e| *e += diff).or_insert(diff);
                 continue;

@@ -85,9 +85,9 @@ pub fn compare_images(
         return;
     }
 
-    let difference_between = get_difference_between_images(HashAlg::Median, &mut first_image, &mut second_image, true);
+    let difference_between = get_difference_between_images(&[HashAlg::Median, HashAlg::Mean], &mut first_image, &mut second_image, true);
 
-    if difference_between <= settings.max_difference {
+    if difference_between.iter().any(|e| e <= &settings.max_difference) {
     } else {
         copy_to_file_name(first_output_png, &settings.output_folder);
         copy_to_file_name(other_output_png, &settings.output_folder);
@@ -99,25 +99,34 @@ pub fn compare_images(
     }
 }
 
-pub fn get_difference_between_images(hash_alg: HashAlg, first_image: &mut DynamicImage, second_image: &mut DynamicImage, remove_alpha: bool) -> u32 {
+pub fn get_difference_between_images(
+    hash_algs: &[HashAlg],
+    first_image: &mut DynamicImage,
+    second_image: &mut DynamicImage,
+    remove_alpha: bool,
+) -> Vec<u32> {
     if remove_alpha {
         remove_alpha_channel(first_image);
         remove_alpha_channel(second_image);
     }
-    let hasher = HasherConfig::new().hash_alg(hash_alg).hash_size(16, 16).to_hasher(); // 8 // 17
+    let mut differences = vec![];
+    for hash_alg in hash_algs {
+        let hasher = HasherConfig::new().hash_alg(*hash_alg).hash_size(16, 16).to_hasher(); // 8 // 17
 
-    let second_image_hash = hasher.hash_image(second_image).as_bytes().to_vec();
-    let first_image_hash = hasher.hash_image(first_image).as_bytes().to_vec();
-    let mut bktree = BKTree::new(Hamming);
+        let second_image_hash = hasher.hash_image(second_image).as_bytes().to_vec();
+        let first_image_hash = hasher.hash_image(first_image).as_bytes().to_vec();
+        let mut bktree = BKTree::new(Hamming);
 
-    bktree.add(second_image_hash);
+        bktree.add(second_image_hash);
 
-    let finds = bktree.find(&first_image_hash, 9999).collect::<Vec<_>>();
-    let difference_between = match finds.first() {
-        Some(t) => t.0,
-        None => 999_999,
-    };
-    difference_between
+        let finds = bktree.find(&first_image_hash, 9999).collect::<Vec<_>>();
+        let difference_between = match finds.first() {
+            Some(t) => t.0,
+            None => 999_999,
+        };
+        differences.push(difference_between);
+    }
+    differences
 }
 
 pub fn copy_to_file_name(original_file: &str, output_folder: &str) {

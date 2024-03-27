@@ -52,6 +52,7 @@ jobs:
       # Fail if broken files path exists
       - name: Fail if broken files
         run: |
+          rmdir BrokenFILES --ignore-fail-on-non-empty
           if [ -d BrokenFILES ]; then
               echo "Broken files found"
               exit 1
