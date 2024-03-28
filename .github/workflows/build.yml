@@ -1,10 +1,10 @@
 name: Build
 
 on:
-  push:
+#  push:
   pull_request:
   schedule:
-    - cron: '0 0 * * 2'
+#    - cron: '0 0 * * 2'
 
 env:
   CARGO_TERM_COLOR: always
@@ -44,8 +44,4 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            Build output
-            GGGG
-            $RANDOM
-          edit-mode: replace
+          body-path: 'comment.md'
