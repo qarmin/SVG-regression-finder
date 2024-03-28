@@ -46,7 +46,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
-          body-includes: Build output
+          body-includes: Regression report
 
       - name: Create or update comment
         uses: peter-evans/create-or-update-comment@v4
@@ -55,5 +55,3 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body-path: 'comment.md'
           edit-mode: replace
-        # If "comment.md" file exists
-        if: steps.check_file.outputs.exists == 'true'
