@@ -26,6 +26,7 @@ fn copy_broken_file(broken_files: (String, String), settings: &Settings) {
     let file_name = path.file_name().unwrap().to_str().unwrap();
     let file_stem = path.file_stem().unwrap().to_str().unwrap();
 
+    fs::create_dir_all(&settings.lottie_broken_files_path).unwrap();
     let _ = fs::copy(&file, format!("{}/{}", settings.lottie_broken_files_path, file_name));
     fs::write(format!("{}/{}.txt", settings.lottie_broken_files_path, file_stem), output).unwrap();
 }
