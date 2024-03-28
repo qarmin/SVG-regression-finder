@@ -45,3 +45,4 @@ jobs:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body-path: 'comment.md'
+          edit-mode: replace
