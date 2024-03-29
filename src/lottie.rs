@@ -33,26 +33,35 @@ fn copy_broken_file(broken_files: (String, String), settings: &Settings) {
 fn find_broken_lottie_files(files_to_check: Vec<String>, settings: &Settings) {
     let atomic_counter: AtomicI32 = AtomicI32::new(0);
     let all_files = files_to_check.len();
-    files_to_check.into_par_iter().for_each(|e| {
-        let number = atomic_counter.fetch_add(1, Ordering::Relaxed);
-        if number % 100 == 0 {
-            println!("-- {}/{} - THORVG", number, all_files);
-        }
-        let output = Command::new("timeout")
-            .arg("-v")
-            .arg(settings.timeout.to_string())
-            .arg(&settings.lottie_path)
-            .arg(&e)
-            .args(["-r", "200x200"])
-            .output()
-            .expect("Failed to execute lottieinfo");
-        let all = format!("{}\n{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
-        let invalid_info = ["LeakSanitizer", "AddressSanitizer"];
-        if invalid_info.iter().any(|e| all.contains(e)) || all.trim().len() > 200 {
-            println!("Broken file {}({})\n{}\n\n", e, (all.len()), all);
-            copy_broken_file((e, all), settings);
-        }
-    });
+    let broken_files_number = files_to_check
+        .into_par_iter()
+        .filter(|e| {
+            let number = atomic_counter.fetch_add(1, Ordering::Relaxed);
+            if number % 100 == 0 {
+                println!("-- {}/{} - THORVG", number, all_files);
+            }
+            let output = Command::new("timeout")
+                .arg("-v")
+                .arg(settings.timeout.to_string())
+                .arg(&settings.lottie_path)
+                .arg(&e)
+                .args(["-r", "200x200"])
+                .output()
+                .expect("Failed to execute lottie");
+            let all = format!("{}\n{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
+            if (all.contains("simpleXmlParse") && all.contains("LeakSanitizer")) || all.contains("Couldn't load image") {
+                return false; // Leak with simpleXmlParse is known issue, at least with svg2png
+                              // Couldn't load image is not a problem with memory, but needs to be checked if is needed here
+            }
+            println!("{}({})\n{}\n\n", e, (all.len()), all);
+            copy_broken_file((e.clone(), all), settings);
+            true
+        })
+        .count();
+
+    if broken_files_number > 0 {
+        eprintln!("POSSIBLE_PROBLEM - Found {broken_files_number} lottie files that cannot be tested due crashes/leaks/timeouts",);
+    }
 }
 fn delete_gif_files(settings: &Settings) {
     for entry in WalkDir::new(&settings.folder_with_files_to_check).max_depth(1).into_iter().flatten() {
