@@ -1,0 +1,59 @@
+name: Thorvg simple check
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 0 * * 2'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install things
+        run: |
+          sudo apt update || true;sudo apt install -y wget2 librsvg2-dev librsvg2-bin ninja-build git gcc-multilib g++-multilib earlyoom
+          sudo pip3 install meson
+
+      - name: Compile Thorvg
+        run: |
+          git clone https://github.com/thorvg/thorvg.git
+          cd thorvg
+          meson . build -Dtools=svg2png -Db_sanitize=address
+          sudo ninja -C build install
+          cd ..
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Prepare tests
+        run: |
+          wget -q https://github.com/qarmin/SVG-regression-finder/releases/download/0.2.0/SVG1000.zip
+          unzip -q SVG1000.zip
+          mv SVG1000 SVG5BigPack
+          mv misc/ci_settings_as_much.toml settings.toml
+
+      - name: Run tests
+        run: |
+          timeout -v 14400 target/release/svg_tester || true
+
+      - name: Store Broken files
+        uses: actions/upload-artifact@v4
+        with:
+          name: brokenFiles
+          path: BrokenFILES
+          if-no-files-found: ignore
+
+      # Fail if broken files path exists
+      - name: Fail if broken files
+        run: |
+          rmdir BrokenFILES --ignore-fail-on-non-empty
+          if [ -d BrokenFILES ]; then
+              echo "Broken files found"
+              exit 1
+          fi

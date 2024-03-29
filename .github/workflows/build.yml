@@ -1,10 +1,10 @@
 name: Build
 
 on:
-#  push:
+  push:
   pull_request:
-#  schedule:
-#    - cron: '0 0 * * 2'
+  schedule:
+    - cron: '0 0 * * 2'
 
 env:
   CARGO_TERM_COLOR: always
@@ -15,43 +15,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-#      - name: Build
-#        run: cargo build --release --verbose
-#
-#      - name: Run tests
-#        run: cargo test --verbose
-#
-#      - name: Store Linux
-#        uses: actions/upload-artifact@v4
+      - name: Build
+        run: cargo build --release --verbose
+
+      - name: Run tests
+        run: cargo test --verbose
+
+      - name: Store Linux
+        uses: actions/upload-artifact@v4
+        with:
+          name: svg_tester
+          path: target/release/svg_tester
+
+#      - name: Find Comment
+#        uses: peter-evans/find-comment@v3
+#        id: fc
 #        with:
-#          name: svg_tester
-#          path: target/release/svg_tester
-
-      - name: set variable
-        run: |
-          RANDOM=$(date +%s)
-
-      - name: Check if comment.md exists
-        id: check_file
-        run: |
-          if [[ -f "comment.md" ]]; then
-            echo "::set-output name=exists::true"
-          else
-            echo "::set-output name=exists::false"
-          fi
-
-      - name: Find Comment
-        uses: peter-evans/find-comment@v3
-        id: fc
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: 'github-actions[bot]'
-          body-includes: Regression report
-
-      - name: Create or update comment
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          comment-id: ${{ steps.fc.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body-path: 'comment.md'
-          edit-mode: replace
+#          issue-number: ${{ github.event.pull_request.number }}
+#          comment-author: 'github-actions[bot]'
+#          body-includes: Regression report
+#
+#      - name: Create or update comment
+#        uses: peter-evans/create-or-update-comment@v4
+#        with:
+#          comment-id: ${{ steps.fc.outputs.comment-id }}
+#          issue-number: ${{ github.event.pull_request.number }}
+#          body-path: 'comment.md'
+#          edit-mode: replace
