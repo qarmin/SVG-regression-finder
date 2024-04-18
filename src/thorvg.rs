@@ -38,7 +38,7 @@ fn find_broken_thorvg_files(files_to_check: Vec<String>, settings: &Settings) {
         .filter(|e| {
             let number = atomic_counter.fetch_add(1, Ordering::Relaxed);
             if number % 100 == 0 {
-                println!("-- {}/{} - THORVG", number, all_files);
+                println!("-- {}/{} - SVG2PNG", number, all_files);
             }
             let output = Command::new("timeout")
                 .arg("-v")

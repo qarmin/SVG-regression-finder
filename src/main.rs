@@ -1,12 +1,12 @@
 #![allow(clippy::similar_names)]
 
-use image_hasher::HashAlg;
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::process::exit;
 use std::sync::atomic::{AtomicI32, AtomicU32, Ordering};
 use std::{fs, process};
 
+use image_hasher::HashAlg;
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
@@ -37,7 +37,10 @@ impl bk_tree::Metric<Vec<u8>> for Hamming {
 
 fn find_files(settings: &Settings, extension: &str) -> Vec<String> {
     let mut files_to_check = Vec::new();
-    println!("Starting to collect files to check");
+    println!(
+        "Starting to collect files to check - extension {extension} in {}",
+        settings.folder_with_files_to_check
+    );
     if Path::new(&settings.folder_with_files_to_check).is_dir() {
         for entry in WalkDir::new(&settings.folder_with_files_to_check).max_depth(1).into_iter().flatten() {
             let path = entry.path();

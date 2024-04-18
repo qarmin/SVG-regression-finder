@@ -38,7 +38,7 @@ fn find_broken_lottie_files(files_to_check: Vec<String>, settings: &Settings) {
         .filter(|e| {
             let number = atomic_counter.fetch_add(1, Ordering::Relaxed);
             if number % 100 == 0 {
-                println!("-- {}/{} - THORVG", number, all_files);
+                println!("-- {}/{} - LOTTIE", number, all_files);
             }
             let output = Command::new("timeout")
                 .arg("-v")
@@ -48,10 +48,13 @@ fn find_broken_lottie_files(files_to_check: Vec<String>, settings: &Settings) {
                 .args(["-r", "200x200"])
                 .output()
                 .expect("Failed to execute lottie");
+            if output.status.success() {
+                return false;
+            }
+
             let all = format!("{}\n{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
-            if (all.contains("simpleXmlParse") && all.contains("LeakSanitizer")) || all.contains("Couldn't load image") {
-                return false; // Leak with simpleXmlParse is known issue, at least with svg2png
-                              // Couldn't load image is not a problem with memory, but needs to be checked if is needed here
+            if all.contains("Failed Converting Gif file") {
+                return false;
             }
             println!("{}({})\n{}\n\n", e, (all.len()), all);
             copy_broken_file((e.clone(), all), settings);
