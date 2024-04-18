@@ -36,9 +36,10 @@ jobs:
         run: |
           wget -q https://github.com/qarmin/SVG-regression-finder/releases/download/0.4.0/SVG10000.zip
           unzip -q SVG10000.zip
+          mv SVG5BigPack Test
           mkdir SVG5BigPack
-          create_broken_files --input-path SVG10000 --output-path SVG5BigPack --number-of-broken-files 200
-          rm -rf SVG10000
+          create_broken_files --input-path Test --output-path SVG5BigPack --number-of-broken-files 200
+          rm -rf Test
           mv misc/ci_settings_as_much.toml settings.toml
 
       - name: Run tests
