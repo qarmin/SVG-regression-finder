@@ -1,0 +1,54 @@
+name: Thorvg fuzzer check
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 4 * * *'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install things
+        run: |
+          sudo apt update || true;sudo apt install -y wget2 librsvg2-dev librsvg2-bin ninja-build git gcc-multilib g++-multilib earlyoom
+          sudo pip3 install meson
+          cargo install --git https://github.com/qarmin/svg_creator
+          wget https://github.com/qarmin/svg_creator/blob/master/settings_ci.toml -O settings.toml
+
+      - name: Compile Thorvg
+        run: |
+          git clone https://github.com/thorvg/thorvg.git
+          cd thorvg
+          meson . build -Dtools=svg2png -Db_sanitize=address
+          sudo ninja -C build install
+          cd ..
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Run tests
+        run: |
+          svg_creator
+
+      - name: Store Broken files
+        uses: actions/upload-artifact@v4
+        with:
+          name: BrokenFound
+          path: BrokenFound
+          if-no-files-found: ignore
+
+      # Fail if broken files path exists
+      - name: Fail if broken files
+        run: |
+          rmdir BrokenFound --ignore-fail-on-non-empty
+          if [ -d BrokenFound ]; then
+              echo "Broken files found"
+              exit 1
+          fi
