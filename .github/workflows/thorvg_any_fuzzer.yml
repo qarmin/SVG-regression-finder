@@ -1,4 +1,4 @@
-name: Thorvg fuzzer check
+name: Thorvg any fuzzer
 
 on:
   push:
