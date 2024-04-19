@@ -20,7 +20,7 @@ jobs:
           sudo apt update || true;sudo apt install -y wget2 librsvg2-dev librsvg2-bin ninja-build git gcc-multilib g++-multilib earlyoom
           sudo pip3 install meson
           cargo install --git https://github.com/qarmin/svg_creator
-          wget https://github.com/qarmin/svg_creator/blob/master/settings_ci.toml -O settings.toml
+          wget https://raw.githubusercontent.com/qarmin/svg_creator/master/settings_ci.toml -O settings.toml
 
       - name: Compile Thorvg
         run: |
