@@ -40,7 +40,7 @@ jobs:
           unzip -q Lottie.zip
           cd ..
           mkdir SVG5BigPack
-          create_broken_files --input-path Lottie --output-path SVG5BigPack --number-of-broken-files 20
+          create_broken_files --input-path Lottie --output-path SVG5BigPack --number-of-broken-files 400
           rm -rf Lottie
           mv misc/ci_settings_as_much_lottie.toml settings.toml
 
