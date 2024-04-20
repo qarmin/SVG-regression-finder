@@ -24,7 +24,7 @@ jobs:
         run: |
           git clone https://github.com/thorvg/thorvg.git
           cd thorvg
-          meson . build -Dtools=svg2png -Db_sanitize=address
+          meson . build -Dtools=svg2png,lottie2gif -Dsavers=gif -Db_sanitize=address,undefined
           sudo ninja -C build install
           cd ..
 
