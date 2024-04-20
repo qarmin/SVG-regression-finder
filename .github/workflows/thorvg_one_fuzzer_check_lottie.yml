@@ -39,7 +39,7 @@ jobs:
           wget -q https://github.com/qarmin/SVG-regression-finder/releases/download/0.4.0/Lottie.zip
           unzip -q Lottie.zip
           cd ..
-          mkdir Created
+          mkdir SVG5BigPack
           create_broken_files --input-path Lottie --output-path SVG5BigPack --number-of-broken-files 20
           rm -rf Lottie
           mv misc/ci_settings_as_much_lottie.toml settings.toml
