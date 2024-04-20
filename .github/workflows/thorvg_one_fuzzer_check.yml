@@ -4,7 +4,7 @@ on:
   push:
   pull_request:
   schedule:
-    - cron: '0 0 * * 2'
+    - cron: '0 4 * * *'
 
 env:
   CARGO_TERM_COLOR: always
@@ -25,7 +25,7 @@ jobs:
         run: |
           git clone https://github.com/thorvg/thorvg.git
           cd thorvg
-          meson . build -Dtools=svg2png -Db_sanitize=address
+          meson . build -Dtools=svg2png -Dtools=svg2png,lottie2gif -Dsavers=gif -Db_sanitize=address,undefined
           sudo ninja -C build install
           cd ..
 
@@ -34,12 +34,12 @@ jobs:
 
       - name: Prepare tests
         run: |
-          wget -q https://github.com/qarmin/SVG-regression-finder/releases/download/0.2.0/SVG1000.zip
-          unzip -q SVG1000.zip
-          mv SVG1000 SVG5BigPack
-          cd SVG5BigPack
-          create_broken_files --input-path . --output-path . --number-of-broken-files 200
-          cd ..
+          wget -q https://github.com/qarmin/SVG-regression-finder/releases/download/0.4.0/SVG10000.zip
+          unzip -q SVG10000.zip
+          mv SVG5BigPack Test
+          mkdir SVG5BigPack
+          create_broken_files --input-path Test --output-path SVG5BigPack --number-of-broken-files 200
+          rm -rf Test
           mv misc/ci_settings_as_much.toml settings.toml
 
       - name: Run tests

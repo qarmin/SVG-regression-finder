@@ -1,4 +1,4 @@
-name: Thorvg all check
+name: Lottie fuzzer check
 
 on:
   push:
@@ -19,12 +19,13 @@ jobs:
         run: |
           sudo apt update || true;sudo apt install -y wget2 librsvg2-dev librsvg2-bin ninja-build git gcc-multilib g++-multilib earlyoom
           sudo pip3 install meson
+          cargo install create_broken_files
 
       - name: Compile Thorvg
         run: |
           git clone https://github.com/thorvg/thorvg.git
           cd thorvg
-          meson . build -Dtools=svg2png -Db_sanitize=address
+          meson . build -Dtools=svg2png -Dtools=svg2png,lottie2gif -Dsavers=gif -Db_sanitize=address,undefined
           sudo ninja -C build install
           cd ..
 
@@ -33,9 +34,15 @@ jobs:
 
       - name: Prepare tests
         run: |
-          wget -q https://github.com/qarmin/SVG-regression-finder/releases/download/0.2.0/SVG5BigPack.zip
-          unzip -q SVG5BigPack.zip
-          mv misc/ci_settings_as_much.toml settings.toml
+          mkdir Lottie
+          cd Lottie
+          wget -q https://github.com/qarmin/SVG-regression-finder/releases/download/0.4.0/Lottie.zip
+          unzip -q Lottie.zip
+          cd ..
+          mkdir SVG5BigPack
+          create_broken_files --input-path Lottie --output-path SVG5BigPack --number-of-broken-files 20
+          rm -rf Lottie
+          mv misc/ci_settings_as_much_lottie.toml settings.toml
 
       - name: Run tests
         run: |
